@@ -1,42 +1,34 @@
-# CHORD ATLAS v5 — Full 88-Key Piano + Audio Tab Capture
+# CHORD ATLAS v6 — Audio to MIDI + Fixed 88 Keys
 
-Aplikasi musik interaktif berbasis HTML/CSS/JavaScript, gratis, dapat dipasang di GitHub Pages tanpa backend dan tanpa API berbayar.
+## Update di GitHub Pages
 
-## Yang baru
+Upload file dan folder dari ZIP FULL ke root repository (tempat `index.html`), menggantikan versi sebelumnya. `styles.css?v=6.0.1` dan `app.js?v=6.0.1` memakai parameter versi agar browser tidak menampilkan cache lama. Jika memakai ZIP FIX SAJA, timpa `index.html`, `styles.css`, `app.js` (file `audio-bank.js` versi v5 tetap dipakai).
 
-- **88 tuts standar A0–C8** di piano utama dan piano roll ala Synthesia. Masing-masing terdiri dari 52 tuts putih dan 36 tuts hitam.
-- Tiga tombol navigasi **Bass / Tengah / Treble**. Area piano dapat digeser dengan mouse, trackpad, atau jari. Area awal menampilkan oktaf tengah.
-- Seluruh rentang piano roll dan editor manual diperpanjang ke A0–C8, termasuk impor MIDI nada rendah dan tinggi.
-- **Tangkap Audio Tab** untuk menganalisis suara dari tab video YouTube/Instagram dengan izin pengguna di Chrome/Edge desktop. Rekaman disimpan sementara di browser dan langsung dianalisis jadi *perkiraan nada melodi*.
-- Warna tuts menunjukkan bunyi saat dimainkan, bukan status permanen. Penanda chord kiri/kanan tetap opsional lewat "Lihat posisi chord".
-- Menu lama: Piano Studio, Cheat Sheet, Circle of Fifths, Chord Journey, Belajar Notasi, transkripsi, impor/ekspor MIDI tetap dipertahankan.
+## Cara tangkap audio tab YouTube / Instagram
 
-## Pasang ke GitHub Pages
+1. Buka CHORD ATLAS melalui GitHub Pages (alamat `https://...`), lalu buka video dalam tab Chrome lain.
+2. Menu **Transkripsi Lagu** → **Tangkap Audio Tab**.
+3. Pada dialog Chrome pilih **Chrome Tab**, pilih tab YouTube/Instagram dan aktifkan **Share tab audio / Bagikan audio tab**. Jangan pilih **Entire Screen / Seluruh Layar**.
+4. Putar video; selesai merekam klik **Selesai & Deteksi**. Audio ditangkap hanya setelah izin diberikan.
+5. Pilih **Melodi utama** atau **Piano & chord (perkiraan beberapa nada)**; lalu tekan **Deteksi Audio → MIDI** bila ingin memproses ulang.
+6. Hasilnya masuk ke **Piano Roll Jatuh**. Tekan **↓ MIDI** untuk mengunduh, atau **Editor nada** untuk memperbaiki nada.
 
-1. Ekstrak ZIP FULL.
-2. Unggah **isi foldernya**, bukan ZIP-nya, ke root repository GitHub (`index.html`, `styles.css`, `app.js`, `audio-bank.js`, `favicon.svg`, folder `audio`, dan file lisensi).
-3. Aktifkan Settings → Pages → Deploy from branch `main`, folder `/ (root)`.
-4. Setelah terbit, refresh situs dengan **Ctrl+F5** supaya file JavaScript/CSS lama tidak tersimpan di cache.
+Aplikasi tidak mendownload audio dari link YouTube/Instagram secara otomatis. Yang dibaca adalah audio tab yang dibagikan pengguna dengan izin browser. Pengambilan audio langsung dari iframe YouTube/Instagram dibatasi browser/platform.
 
-Untuk mengganti versi v4 yang sudah terpasang dan masih memiliki `audio-bank.js`, gunakan ZIP `FIX_SAJA` dan **timpa tiga file** `index.html`, `styles.css`, `app.js`.
+## Perbaikan v6
 
-Untuk mencoba **offline**, ekstrak ZIP `SATU_FILE` lalu buka `index.html` di Chrome/Edge. Audio piano tetap tersedia. Fitur menangkap audio tab paling andal jika aplikasi dibuka melalui **GitHub Pages (HTTPS)**.
+- Merekam audio Chrome Tab dengan MediaRecorder tanpa jalur monitor yang memutar audio dua kali/bergema.
+- Menampilkan pesan jika tab tidak memiliki audio track. Rekaman audio diteruskan ke deteksi nada lalu dapat diekspor menjadi .mid.
+- Dua metode deteksi on-device: melodi utama, serta estimasi beberapa nada simultan (eksperimental).
+- Piano dan piano roll 88 tuts A0–C8 **mengisi lebar panel** tanpa scroll horizontal.
+- Sidebar bisa dilipat untuk memenuhi layar dan pilihan disimpan di browser.
+- Tampilan transkripsi menggunakan panel selebar konten, bukan dua kolom dengan ruang kosong.
+- Tidak memerlukan backend, API berbayar, atau layanan eksternal untuk analisis audio. Sampel audio grand piano terintegrasi melalui `audio-bank.js`.
 
-## Cara memakai Tangkap Audio Tab
+## Batasan penting
 
-1. Buka **Transkripsi Lagu** di CHORD ATLAS.
-2. Buka video YouTube/Instagram di tab Chrome/Edge lain.
-3. Di aplikasi, klik **Tangkap Audio Tab**.
-4. Pada dialog browser, pilih **Chrome Tab** (bukan Entire Screen), pilih tab video, lalu aktifkan **Share tab audio / Bagikan audio tab**.
-5. Putar video dan biarkan audio berjalan. Kembali ke aplikasi, klik **Selesai & Deteksi**. Maksimal 5 menit per rekaman.
-6. Nada hasil analisis dimuat ke Piano Roll Jatuh; tekan **Putar**. Perbaiki lewat Editor nada, dan ekspor ke MIDI jika perlu.
+Analisis otomatis sederhana ini tidak setara model pemisahan instrumen. Untuk piano solo dan melodi yang jelas hasilnya lebih baik. Lagu fusion dengan gitar, bass, sax, drum, dan instrumen tumpang tindih bisa menghasilkan nada salah, nada hilang, atau chord tidak lengkap. MIDI adalah *hasil perkiraan* dan bisa disunting. Tanpa pemisahan instrumen/ML yang lebih kuat, tidak ada jaminan transkripsi sempurna.
 
-**Batasan:** link YouTube/Instagram tidak otomatis memberikan akses ke audio video. Tidak ada pengunduhan/pengambilan tersembunyi. Fitur Tab Capture meminta persetujuan pengguna. Algoritme deteksi nada lokal memperkirakan melodi dominan, **bukan** memisahkan seluruh instrumen atau menghasilkan chord yang selalu akurat. Gunakan MIDI untuk hasil polifonik lebih akurat. Rekam dan olah hanya materi yang boleh Anda gunakan.
+Pengujian otomatis: audio uji A4 440 Hz dan C5 523 Hz berhasil terbaca, file MIDI dapat diunduh, simulasi MediaRecorder audio tab berhasil, tuts utama dan piano roll 88 buah masing-masing, sidebar collapse, tidak ada JS page errors. Streaming langsung dari YouTube sebenarnya tetap harus dites di Chrome pengguna karena browser meminta pilihan tab secara manual.
 
-## Mengetes piano
-
-Klik **Tes suara**. Jika belum berbunyi, pastikan browser mengizinkan suara dan volume perangkat aktif. Sampel suara grand piano disimpan lokal dalam `audio-bank.js`, tanpa permintaan ke server audio.
-
-## Lisensi audio
-
-Bank sampel piano berasal dari TimGM6mb SoundFont, **GPL-2.0-only**. Lihat `audio/CREDITS.txt` dan `LICENSE`. Redistribusi bank sampel harus mempertahankan ketentuan lisensi tersebut. Paket ini menyertakan kredit dan teks lisensinya.
+Licensing: see LICENSE and audio/CREDITS.txt for audio attribution. All code and samples remain subject to respective source licenses.

@@ -122,32 +122,22 @@ function diatonicChord(degree,style=state.style){const minor=style==='minor';con
  return chordObj(state.key+s[i],q,-1,degree)}
 function diatonicChordsForScale(){let scale=scaleSteps();return scale.map((s,i)=>chordObj(state.key+s,degreeQuality(scale,i,'jazz'),-1,i+1))}
 function renderStudio(){saveLocal();const c=currentChord(),notes=midiNotes(c);$('#selected-chord').textContent=chordText(c);$('#chord-formula').textContent='Rumus '+(QUALITY[c.quality]?.formula||'1 · 3 · 5');$('#left-hand').textContent=notes.left.map(shortName).join(' · ');$('#right-hand').textContent=notes.right.map(shortName).join(' · ');$('#heard-as').textContent='Suara yang keluar: '+chordText(transposeChord(c,state.transpose));$('#transpose-value').textContent=(state.transpose>0?'+':'')+state.transpose;$('#keyboard-caption').textContent=state.transpose!==0?'Tekan '+chordText(c)+' → suara '+chordText(transposeChord(c,state.transpose)):'Klik tuts untuk bunyi';const scale=scaleSteps();$('#scale-notes').textContent=scale.map(i=>noteName(state.key+i)).join('  ·  ');$('#scale-degrees').innerHTML=scale.map((_,i)=>`<span>${['1','2','3','4','5','6','7'][i]}</span>`).join('');const degreeLabels=['TONIC','SUPERTONIC','MEDIANT','SUBDOMINANT','DOMINANT','SUBMEDIANT','LEADING'];$('#diatonic-list').innerHTML=diatonicChordsForScale().map((d,i)=>`<button class="diatonic-row" data-degree="${i}"><span class="degree-chip">${state.scale==='minor'?ROM_MINOR[i]:ROM_MAJOR[i]}</span><strong>${chordText(d)}</strong><span class="function-label">${degreeLabels[i]}</span><span class="inline-play">▶</span></button>`).join('');paintPiano();}
-const PIANO_MIN=21,PIANO_MAX=108,PIANO_WHITE_W=32;
+const PIANO_MIN=21,PIANO_MAX=108;
 const pianoWhites=Array.from({length:PIANO_MAX-PIANO_MIN+1},(_,i)=>PIANO_MIN+i).filter(m=>![1,3,6,8,10].includes(m%12));
-function jumpToPiano(place,kind){
- const roll=kind==='fall',shell=roll?$('#fall-scroller'):$('#piano');if(!shell)return;
- const whiteW=roll?FALL_W:PIANO_WHITE_W,whiteNotes=roll?fallWhites:pianoWhites;
- const midi=place==='low'?21:place==='high'?108:60;
- const idx=whiteNotes.indexOf(midi),center=idx*whiteW+whiteW/2;
- const target=place==='low'?0:place==='high'?shell.scrollWidth-shell.clientWidth:center-shell.clientWidth/2;
- shell.scrollLeft=Math.max(0,Math.min(shell.scrollWidth-shell.clientWidth,target));
- const attr=roll?'data-fall-jump':'data-piano-jump';
- $$('['+attr+']').forEach(b=>{const active=b.getAttribute(attr)===place;b.classList.toggle('is-selected',active);b.setAttribute('aria-pressed',String(active))});
-}
+function jumpToPiano(){/* Semua 88 tuts selalu terlihat; tidak perlu menggulir. */}
 function createKeyboard(){
- const shell=$('#piano');const inner=document.createElement('div');inner.className='piano-inner';
- const width=pianoWhites.length*PIANO_WHITE_W;
- inner.style.cssText='display:flex;position:relative;flex:0 0 '+width+'px;width:'+width+'px;min-width:'+width+'px;height:100%';
- for(const m of pianoWhites){const b=document.createElement('button');b.className='white-key';b.type='button';b.dataset.midi=m;b.setAttribute('aria-label',shortName(m));b.textContent=shortName(m);inner.appendChild(b)}
+ const shell=$('#piano'),inner=document.createElement('div');inner.className='piano-inner';
+ inner.style.cssText='display:flex;position:relative;width:100%;min-width:0;height:100%';
+ const unit=100/pianoWhites.length;
+ for(const m of pianoWhites){const b=document.createElement('button');b.className='white-key';b.type='button';b.dataset.midi=m;b.setAttribute('aria-label',shortName(m));b.style.cssText=`flex:0 0 ${unit}%;width:${unit}%;max-width:${unit}%;min-width:0`;b.textContent=shortName(m);inner.appendChild(b)}
  for(let m=PIANO_MIN;m<=PIANO_MAX;m++){
   if(![1,3,6,8,10].includes(m%12))continue;
-  const before=pianoWhites.filter(x=>x<m).length,b=document.createElement('button');
-  b.type='button';b.className='black-key';b.dataset.midi=m;b.setAttribute('aria-label',shortName(m));b.textContent=shortName(m);
-  b.style.left=(before*PIANO_WHITE_W-11)+'px';b.style.width='22px';inner.appendChild(b);
+  const before=pianoWhites.filter(x=>x<m).length,b=document.createElement('button');b.type='button';b.className='black-key';b.dataset.midi=m;
+  b.setAttribute('aria-label',shortName(m));b.textContent=shortName(m);
+  b.style.left=((before-.32)*unit)+'%';b.style.width=(unit*.64)+'%';b.style.minWidth='0';inner.appendChild(b);
  }
- shell.appendChild(inner);
+ shell.replaceChildren(inner);
  shell.addEventListener('pointerdown',e=>{const button=e.target.closest('[data-midi]');if(!button)return;e.preventDefault();playNote(Number(button.dataset.midi));});
- requestAnimationFrame(()=>jumpToPiano('mid','main'));
 }
 function paintPiano(){const c=currentChord(),notes=midiNotes(c),l=new Set(notes.left),r=new Set(notes.right),scale=new Set(scaleSteps().map(i=>mod(i+state.key)));$$('#piano [data-midi]').forEach(el=>{const m=Number(el.dataset.midi);el.classList.toggle('is-left',chordGuideEnabled&&l.has(m));el.classList.toggle('is-right',chordGuideEnabled&&r.has(m));el.classList.toggle('in-scale',chordGuideEnabled&&scale.has(mod(m)));});}
 // SVG geometry
@@ -247,10 +237,10 @@ function renderCheatSheet(){
 // ------------------------------------------------------------
 const rollState={notes:[],seconds:16,playing:false,timers:[],raf:0,playStarted:0,playBase:0,playhead:-2.8,rate:1,objectURL:null,sourceBuffer:null,filename:'',worker:null,sourcePCM:null,sourceRate:11025};
 const ROLL_H=20,ROLL_LOW=21,ROLL_HIGH=108;
-const FALL_W=26,FALL_B=17,FALL_H=380,FALL_LOW=21,FALL_HIGH=108,FALL_LOOKAHEAD=3.15;
+let FALL_W=26,FALL_B=17,FALL_WIDTH=1352;const FALL_H=460,FALL_LOW=21,FALL_HIGH=108,FALL_LOOKAHEAD=3.15;
 const fallWhites=Array.from({length:FALL_HIGH-FALL_LOW+1},(_,i)=>FALL_LOW+i).filter(n=>![1,3,6,8,10].includes(n%12));
 const fallAll=Array.from({length:FALL_HIGH-FALL_LOW+1},(_,i)=>FALL_LOW+i);
-const FALL_WIDTH=fallWhites.length*FALL_W;
+
 let fallLastActive='',fallCanvasReady=false;
 function fallPosition(midi){
  const idx=fallWhites.indexOf(midi);if(idx>=0)return {x:idx*FALL_W,w:FALL_W,black:false};
@@ -260,7 +250,7 @@ function setupFallingKeyboard(){
  if(fallCanvasReady)return;const canvas=$('#fall-canvas'), keys=$('#fall-keys');
  if(!canvas||!keys)return;
  canvas.width=FALL_WIDTH;canvas.height=FALL_H;canvas.style.width=FALL_WIDTH+'px';canvas.style.height=FALL_H+'px';
- const stage=$('#fall-stage');stage.style.width=FALL_WIDTH+'px';keys.style.width=FALL_WIDTH+'px';
+ const stage=$('#fall-stage');stage.style.width='100%';keys.style.width='100%';
  for(const midi of fallWhites){const position=fallPosition(midi),b=document.createElement('button');
   b.className='fall-white-key';b.type='button';b.dataset.fallMidi=midi;
   b.style.left=position.x+'px';b.style.width=position.w+'px';
@@ -269,7 +259,16 @@ function setupFallingKeyboard(){
   b.className='fall-black-key';b.type='button';b.dataset.fallMidi=midi;
   b.style.left=position.x+'px';b.style.width=position.w+'px';b.title=shortName(midi);keys.appendChild(b);}
  keys.addEventListener('pointerdown',e=>{const b=e.target.closest('[data-fall-midi]');if(!b)return;e.preventDefault();const midi=Number(b.dataset.fallMidi);playNote(midi);b.classList.add('is-active');setTimeout(()=>{if(!rollState.playing)b.classList.remove('is-active')},300);});
- fallCanvasReady=true;requestAnimationFrame(()=>jumpToPiano('mid','fall'));
+ fallCanvasReady=true;requestAnimationFrame(resizeFallCanvas);
+}
+function resizeFallCanvas(){
+ const panel=$('#fall-scroller'),canvas=$('#fall-canvas'),stage=$('#fall-stage'),keys=$('#fall-keys');
+ if(!panel||!canvas||!stage||!keys||!fallCanvasReady)return;
+ FALL_WIDTH=Math.max(300,Math.floor(panel.clientWidth-2));FALL_W=FALL_WIDTH/fallWhites.length;FALL_B=FALL_W*.64;
+ canvas.width=FALL_WIDTH;canvas.height=FALL_H;canvas.style.width='100%';canvas.style.height=FALL_H+'px';
+ stage.style.width='100%';stage.style.minWidth='0';keys.style.width='100%';
+ for(const b of keys.querySelectorAll('[data-fall-midi]')){const pos=fallPosition(Number(b.dataset.fallMidi));b.style.left=(pos.x/FALL_WIDTH*100)+'%';b.style.width=(pos.w/FALL_WIDTH*100)+'%';}
+ drawFallingRoll();
 }
 function fallTime(sec){const x=Math.max(0,sec);return String(Math.floor(x/60)).padStart(2,'0')+':'+String(Math.floor(x%60)).padStart(2,'0')}
 function fallDuration(){return rollState.notes.length?Math.max(1,rollState.notes.reduce((max,n)=>Math.max(max,n.start+n.duration),0)):Math.max(16,rollState.seconds);}
@@ -297,6 +296,11 @@ function drawFallingRoll(){
   ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x,top,width,height,Math.min(5,height/2));else ctx.rect(x,top,width,height);ctx.fill();ctx.shadowBlur=0;
   ctx.fillStyle='#ffffff7a';ctx.fillRect(x+2,top+2,Math.max(1,width-4),Math.min(2,height-2));
   if(height>30&&width>24){ctx.fillStyle='#101526';ctx.font='bold 10px system-ui';ctx.fillText(noteName(n.midi),x+4,Math.min(bottom-5,top+17));}
+ }
+ if(!rollState.notes.length){
+  ctx.textAlign='center';ctx.fillStyle='#a5c9d6';ctx.font='600 18px system-ui';ctx.fillText('Belum ada nada',w/2,h*.42);
+  ctx.font='12px system-ui';ctx.fillStyle='#769caf';ctx.fillText('Tangkap audio tab atau unggah file audio, lalu klik Deteksi Audio → MIDI',w/2,h*.42+28);
+  ctx.textAlign='left';
  }
  ctx.shadowColor='#58ebdc';ctx.shadowBlur=14;ctx.fillStyle='#65ffdf';ctx.fillRect(0,h-3,w,3);ctx.shadowBlur=0;
  const activeNotes=rollState.playing?rollState.notes.filter(n=>n.start<=now&&now<n.start+n.duration).map(n=>n.midi):[];
@@ -436,82 +440,61 @@ function openReference(){
   $('#source-feedback').textContent='Instagram sudah dibuka. Gunakan Tangkap Audio Tab untuk merekam suara tab dengan izin Chrome.';
  }else toast('Yang didukung: YouTube dan Instagram.');
 }
-// Audio tab sengaja hanya diakses setelah pengguna memilih sumber dalam dialog Chrome.
-// Tidak memakai URL streaming/downloader/proxy. Ditujukan untuk audio yang berhak pengguna analisis.
-const captureState={stream:null,ctx:null,source:null,proc:null,mute:null,monitor:null,segments:[],frames:0,phase:0,start:0,timer:null,stopping:false,lastPeak:0};
-const CAPTURE_RATE=11025,CAPTURE_LIMIT_SEC=300;
-function captureMessage(message){const el=$('#capture-status');if(el)el.textContent=message}
+// Capture via browser tab sharing permission. Never download audio by URL or read iframe contents.
+const captureState={stream:null,recorder:null,chunks:[],timer:null,start:0,stopping:false,lastError:''};
+const CAPTURE_RATE=11025,CAPTURE_LIMIT_SEC=240;
+function captureMessage(message){const el=$('#capture-status');if(el)el.textContent=message;}
 function captureUI(recording){$('#capture-start').disabled=recording;$('#capture-stop').disabled=!recording;$('#tab-capture-panel').classList.toggle('is-recording',recording)}
 async function startTabCapture(){
  if(captureState.stream)return;
- if(!navigator.mediaDevices?.getDisplayMedia){captureMessage('Browser tidak mendukung berbagi audio tab. Buka situs melalui HTTPS di Chrome/Edge desktop, atau impor file audio/MIDI.');return;}
- // Harus dipanggil langsung dari klik pengguna, sebelum await lainnya.
+ if(!navigator.mediaDevices?.getDisplayMedia||typeof MediaRecorder==='undefined'){
+  captureMessage('Fitur tangkap tab tidak tersedia. Gunakan Chrome/Edge desktop lewat HTTPS atau pilih file audio.');return;
+ }
  let stream;
- try{stream=await navigator.mediaDevices.getDisplayMedia({video:true,audio:true,systemAudio:'exclude',selfBrowserSurface:'exclude'});}
- catch(err){captureMessage(err.name==='NotAllowedError'?'Izin berbagi tab dibatalkan. Klik Tangkap Audio Tab untuk mencoba lagi.':'Tidak dapat membuka pemilih tab: '+err.message);return;}
- if(stream.getAudioTracks().length===0){stream.getTracks().forEach(t=>t.stop());captureMessage('Tidak ada audio! Pilih Chrome Tab, pilih video YouTube, dan aktifkan “Bagikan audio tab / Share tab audio”. Jangan pilih Seluruh layar.');return;}
  try{
-  const Ctx=window.AudioContext||window.webkitAudioContext;if(!Ctx)throw Error('Web Audio tidak tersedia.');
-  const ctx=new Ctx();await ctx.resume();
-  const src=ctx.createMediaStreamSource(new MediaStream(stream.getAudioTracks()));
-  const proc=ctx.createScriptProcessor(4096,1,1);
-  const mute=ctx.createGain();mute.gain.value=0;
-  const monitor=ctx.createGain();monitor.gain.value=.95;
-  captureState.stream=stream;captureState.ctx=ctx;captureState.source=src;captureState.proc=proc;captureState.mute=mute;captureState.monitor=monitor;
-  captureState.segments=[];captureState.frames=0;captureState.phase=0;captureState.stopping=false;captureState.lastPeak=0;captureState.start=performance.now();
-  let stride=ctx.sampleRate/CAPTURE_RATE;
-  proc.onaudioprocess=e=>{
-   if(captureState.stopping)return;
-   const input=e.inputBuffer.getChannelData(0),out=e.outputBuffer.getChannelData(0);out.fill(0);
-   const down=new Float32Array(Math.ceil(input.length/stride)+2);let used=0,peak=0;
-   for(let i=0;i<input.length;i++){let v=input[i];peak=Math.max(peak,Math.abs(v));captureState.phase+=1;if(captureState.phase>=stride){captureState.phase-=stride;down[used++]=v;}}
-   if(used){captureState.segments.push(down.subarray(0,used));captureState.frames+=used;}
-   captureState.lastPeak=peak;
-  };
-  src.connect(proc);proc.connect(mute);mute.connect(ctx.destination);
-  // Saat tab dibagikan Chrome mungkin menonaktifkan suara pada tab sumber.
-  // Monitor lokal mempertahankan suara agar pengguna dapat mendengar videonya.
-  src.connect(monitor);monitor.connect(ctx.destination);
-  stream.getTracks().forEach(t=>t.addEventListener('ended',()=>{if(captureState.stream&&!captureState.stopping)finishTabCapture()}, {once:true}));
-  captureUI(true);$('#analysis-progress').value=0;$('#capture-elapsed').textContent='00:00';
-  captureMessage('Merekam suara tab… Putar video di tab YouTube. Kembali ke CHORD ATLAS setelah bagian yang ingin dianalisis selesai. Maksimal 5 menit.');
+  stream=await navigator.mediaDevices.getDisplayMedia({video:{displaySurface:'browser'},audio:{suppressLocalAudioPlayback:false},selfBrowserSurface:'exclude',systemAudio:'exclude'});
+ }catch(err){captureMessage(err.name==='NotAllowedError'?'Berbagi tab dibatalkan. Klik Tangkap Audio Tab lalu pilih tab video.':'Gagal membuka pemilih tab: '+(err.message||err.name));return;}
+ if(!stream.getAudioTracks().length){stream.getTracks().forEach(t=>t.stop());captureMessage('Audio tidak terbagi. Pilih Chrome Tab (bukan Window/Entire Screen) dan CENTANG “Share tab audio / Bagikan audio tab”.');return;}
+ try{
+  const mime=['audio/webm;codecs=opus','audio/webm','audio/mp4'].find(t=>MediaRecorder.isTypeSupported(t));
+  const audioStream=new MediaStream(stream.getAudioTracks());
+  const recorder=new MediaRecorder(audioStream,mime?{mimeType:mime,audioBitsPerSecond:128000}:undefined);
+  captureState.stream=stream;captureState.recorder=recorder;captureState.chunks=[];captureState.stopping=false;captureState.start=performance.now();
+  recorder.addEventListener('dataavailable',e=>{if(e.data?.size)captureState.chunks.push(e.data)});
+  recorder.addEventListener('error',e=>{captureMessage('Rekaman audio gagal: '+(e.error?.message||'MediaRecorder error'))});
+  recorder.addEventListener('stop',async()=>{
+   const chunks=captureState.chunks;captureState.chunks=[];
+   stream.getTracks().forEach(t=>t.stop());captureState.stream=null;captureState.recorder=null;
+   clearInterval(captureState.timer);captureUI(false);
+   const blob=new Blob(chunks,{type:mime||recorder.mimeType||'audio/webm'});
+   if(blob.size<1500){captureMessage('Rekaman kosong. Pastikan tab video sedang diputar dan “Bagikan audio tab” aktif.');return;}
+   try{
+    if(rollState.objectURL)URL.revokeObjectURL(rollState.objectURL);
+    rollState.objectURL=URL.createObjectURL(blob);rollState.sourceBuffer=await blob.arrayBuffer();rollState.sourcePCM=null;
+    $('#audio-reference').src=rollState.objectURL;$('#analyze-audio').disabled=false;
+    captureMessage('Rekaman audio diterima ('+Math.round(blob.size/1024)+' KB). Memeriksa dan mengubah suara menjadi MIDI…');
+    await analyzeUploadedAudio();
+   }catch(err){captureMessage('Audio terekam tetapi belum bisa dibaca: '+err.message)}
+  },{once:true});
+  stream.getVideoTracks().forEach(t=>t.addEventListener('ended',()=>finishTabCapture(),{once:true}));
+  recorder.start(1000);captureUI(true);$('#analysis-progress').value=0;$('#capture-elapsed').textContent='00:00';
+  captureMessage('MEREKAM AUDIO TAB. Putar video di tab YouTube. Tidak ada audio yang dipantulkan kembali ke speaker. Klik Selesai & Deteksi untuk mengubah jadi MIDI.');
   captureState.timer=setInterval(()=>{
-   let sec=(performance.now()-captureState.start)/1000;
+   if(!captureState.stream)return;
+   const sec=(performance.now()-captureState.start)/1000;
    $('#capture-elapsed').textContent=fallTime(sec);
-   $('#capture-meter-fill').style.width=Math.min(100,Math.round(Math.sqrt(captureState.lastPeak)*100))+'%';
+   $('#capture-meter-fill').style.width=Math.min(100,sec/CAPTURE_LIMIT_SEC*100)+'%';
    if(sec>=CAPTURE_LIMIT_SEC)finishTabCapture();
-  },180);
- }catch(err){stream.getTracks().forEach(t=>t.stop());captureUI(false);captureMessage('Gagal menerima suara dari tab: '+err.message);try{await captureState.ctx?.close()}catch(_){ }captureState.stream=null;}
+  },250);
+ }catch(err){stream.getTracks().forEach(t=>t.stop());captureState.stream=null;captureUI(false);captureMessage('Gagal merekam audio: '+(err.message||err.name));}
 }
-function makeWav(pcm,rate){
- const wav=new ArrayBuffer(44+pcm.length*2),v=new DataView(wav),s=(n,t)=>{for(let i=0;i<t.length;i++)v.setUint8(n+i,t.charCodeAt(i));};
- s(0,'RIFF');v.setUint32(4,36+pcm.length*2,true);s(8,'WAVE');s(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,rate,true);v.setUint32(28,rate*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);s(36,'data');v.setUint32(40,pcm.length*2,true);
- for(let i=0;i<pcm.length;i++){let x=Math.max(-1,Math.min(1,pcm[i]));v.setInt16(44+i*2,x<0?x*32768:x*32767,true)}return wav;
-}
-async function finishTabCapture(){
+function finishTabCapture(){
  if(!captureState.stream||captureState.stopping)return;
  captureState.stopping=true;clearInterval(captureState.timer);
- const duration=captureState.frames/CAPTURE_RATE;
- // Lepaskan processor sebelum berhenti berbagi agar tidak ada sample duplikat.
- if(captureState.proc){captureState.proc.onaudioprocess=null;captureState.proc.disconnect();}
- for(const n of [captureState.source,captureState.mute,captureState.monitor])try{n?.disconnect()}catch(_){}
- captureState.stream.getTracks().forEach(t=>t.stop());
- try{await captureState.ctx?.close()}catch(_){}
- captureState.stream=null;captureState.ctx=null;captureUI(false);
- $('#capture-meter-fill').style.width='0%';
- if(duration<.7){captureMessage('Belum ada suara terekam. Ulangi dan putar video setelah memilih tab dengan Bagikan audio tab.');return;}
- const pcm=new Float32Array(captureState.frames);let at=0;
- for(const part of captureState.segments){pcm.set(part,at);at+=part.length;}
- captureState.segments=[];captureState.frames=0;
- const head=pcm.subarray(0,Math.min(150000,pcm.length));let energy=0;for(let i=0;i<head.length;i+=50)energy+=head[i]*head[i];
- if(energy/Math.max(1,Math.floor(head.length/50))<.000001){captureMessage('Audio tab berhasil dibagikan, tapi rekamannya sunyi. Pastikan video tidak mute, putar videonya, dan pilih “Bagikan audio tab”.');return;}
- rollState.sourcePCM=pcm;rollState.sourceRate=CAPTURE_RATE;rollState.sourceBuffer=null;rollState.filename='Audio tab ('+fallTime(duration)+')';
- if(rollState.objectURL)URL.revokeObjectURL(rollState.objectURL);
- rollState.objectURL=URL.createObjectURL(new Blob([makeWav(pcm,CAPTURE_RATE)],{type:'audio/wav'}));
- $('#audio-reference').src=rollState.objectURL;$('#analyze-audio').disabled=false;
- captureMessage('Berhasil merekam '+fallTime(duration)+' dari tab. Analisis dimulai; hasilnya akan masuk ke Piano Roll Jatuh.');
- $('#analysis-message').textContent='Audio tab diterima. Menganalisis perkiraan nada…';
- await analyzeUploadedAudio();
+ const r=captureState.recorder;
+ captureMessage('Menyelesaikan rekaman, membaca audio…');
+ if(r&&r.state!=='inactive'){try{r.requestData();r.stop();}catch(err){captureMessage('Tidak dapat menyelesaikan rekaman: '+err.message);captureState.stream?.getTracks().forEach(t=>t.stop());captureState.stream=null;captureUI(false)}}
+ else{captureState.stream.getTracks().forEach(t=>t.stop());captureState.stream=null;captureUI(false)}
 }
 async function analyzeUploadedAudio(){
  const btn=$('#analyze-audio'),msg=$('#analysis-message'),prog=$('#analysis-progress');
@@ -526,27 +509,17 @@ async function analyzeUploadedAudio(){
    const count=Math.floor(max*rate);raw=new Float32Array(count);const channels=Array.from({length:decoded.numberOfChannels},(_,c)=>decoded.getChannelData(c));
    for(let i=0;i<count;i++){const j=Math.floor(i*step);let val=0;for(const arr of channels)val+=arr[j]||0;raw[i]=val/channels.length;}
   }
-  msg.textContent='Mencari nada dominan (hingga 5 menit)…';
-  const workerCode=`onmessage=e=>{const data=new Float32Array(e.data.buffer),rate=11025,hop=1102,win=1250;let frames=[];let total=Math.max(1,Math.ceil((data.length-win)/hop));let loud=0;for(let i=0;i<data.length;i+=120)loud=Math.max(loud,Math.abs(data[i]));
-   for(let k=0;k<total;k++){let pos=k*hop,energy=0;for(let j=0;j<win;j+=3)energy+=data[pos+j]*data[pos+j];energy=Math.sqrt(energy/(win/3));
-    if(energy<Math.max(.008,loud*.07)){frames.push(-1);continue}
-    let best=-1,bestC=0;for(let lag=12;lag<=205;lag++){let dot=0,a=0,b=0;for(let j=0;j<win-lag;j+=4){let x=data[pos+j],y=data[pos+j+lag];dot+=x*y;a+=x*x;b+=y*y}let corr=dot/Math.sqrt(Math.max(1e-8,a*b));if(corr>.77&&corr>bestC){bestC=corr;best=lag}}
-    let midi=best>0?Math.round(69+12*Math.log2(rate/best/440)):-1;frames.push(midi>=36&&midi<=84?midi:-1);
-    if(k%30===0)postMessage({progress:Math.round(k/total*100)});
-   }
-   let notes=[],current=-1,from=0;const finish=k=>{if(current<0)return;let duration=(k-from)*hop/rate;if(duration>=.19)notes.push({midi:current,start:from*hop/rate,duration,source:'analyzed'})};
-   for(let k=0;k<=frames.length;k++){let v=k===frames.length?-1:frames[k];if(k>0&&k<frames.length-1&&frames[k-1]===frames[k+1]&&v!==frames[k-1])v=frames[k-1];if(v!==current){finish(k);current=v;from=k}}
-   postMessage({done:true,notes:notes.slice(0,450)});
-  }`;
+  msg.textContent='Memisahkan nada dari rekaman (melodi atau chord)…';
+  const workerCode="onmessage=e=>{\n try{\n const data=new Float32Array(e.data.buffer),mode=e.data.mode||'melody',rate=11025;\n const hop=512,N=2048,minMidi=36,maxMidi=96;\n const notesByFrame=[],total=Math.max(0,Math.floor((data.length-N)/hop));\n if(!total){postMessage({done:true,notes:[]});return;}\n const real=new Float32Array(N),imag=new Float32Array(N),power=new Float32Array(N/2);\n const rev=new Uint16Array(N);\n for(let i=0;i<N;i++){let x=i,r=0;for(let b=0;b<11;b++){r=(r<<1)|(x&1);x>>=1;}rev[i]=r;}\n // FFT iterative radix-2 + Hann window (browser local/offline)\n function spectrum(at){\n  let rms=0;\n  for(let i=0;i<N;i++){let v=data[at+i]||0;rms+=v*v;let w=.5-.5*Math.cos(2*Math.PI*i/(N-1)),j=rev[i];real[j]=v*w;imag[j]=0;}\n  for(let size=2;size<=N;size<<=1){let h=size>>1;\n   for(let from=0;from<N;from+=size)for(let j=0;j<h;j++){\n    const a=-2*Math.PI*j/size,wr=Math.cos(a),wi=Math.sin(a),id=from+j,other=id+h;\n    const tr=wr*real[other]-wi*imag[other],ti=wr*imag[other]+wi*real[other];\n    real[other]=real[id]-tr;imag[other]=imag[id]-ti;real[id]+=tr;imag[id]+=ti;\n   }\n  }\n  for(let i=0;i<power.length;i++)power[i]=Math.sqrt(real[i]*real[i]+imag[i]*imag[i]);\n  return Math.sqrt(rms/N);\n }\n function interp(bin){\n  if(bin<1||bin>=power.length-1)return 0;\n  const low=Math.floor(bin),frac=bin-low;\n  const a=Math.max(power[Math.max(1,low-1)],power[low],power[Math.min(power.length-1,low+1)]);\n  const b=Math.max(power[Math.max(1,low)],power[Math.min(power.length-1,low+1)],power[Math.min(power.length-1,low+2)]);\n  return a*(1-frac)+b*frac;\n }\n let maxAmp=0;for(let p=0;p<data.length;p+=101)maxAmp=Math.max(maxAmp,Math.abs(data[p]));\n const threshold=Math.max(.007,maxAmp*.023);\n for(let f=0;f<total;f++){\n  const rms=spectrum(f*hop);if(rms<threshold){notesByFrame.push([]);continue;}\n  const sal=[];\n  for(let m=minMidi;m<=maxMidi;m++){\n   const freq=440*Math.pow(2,(m-69)/12),bin=freq*N/rate;\n   let score=0;\n   for(let harm=1;harm<=Math.min(5,Math.floor(rate*.48/freq));harm++)score+=interp(bin*harm)/Math.pow(harm,1.12);\n   // favor the actual fundamental over a spurious octave\n   const fundamental=interp(bin);\n   score=score*.72+fundamental*.28;\n   sal.push({m,score});\n  }\n  sal.sort((a,b)=>b.score-a.score);\n  const best=sal[0]?.score||0;\n  if(best<.1){notesByFrame.push([]);continue;}\n  if(mode==='melody'){\n   let candidate=sal[0];\n   // a lightly weighted continuity prior avoids some octave jumps\n   const previous=notesByFrame.length?notesByFrame[notesByFrame.length-1][0]:null;\n   if(previous!==undefined&&previous!==null){const near=sal.find(s=>Math.abs(s.m-previous)<=2 && s.score>=best*.75);if(near)candidate=near;}\n   notesByFrame.push([candidate.m]);\n  }else{\n   // Experimental multi-note estimation. Avoid pure harmonic false positives by limiting to 4 notes.\n   const found=[],cutoff=best*.62;\n   for(const item of sal){\n    if(found.length>=4||item.score<cutoff)break;\n    if(found.some(n=>Math.abs(n-item.m)<=1))continue;\n    // octave harmonic collisions require extra prominence\n    if(found.some(n=>Math.abs(n-item.m)===12)&&item.score<best*.88)continue;\n    found.push(item.m);\n   }\n   notesByFrame.push(found);\n  }\n  if(f%65===0)postMessage({progress:Math.round(f/total*100)});\n }\n const count=new Map(),output=[],step=hop/rate;\n for(let i=0;i<notesByFrame.length;i++){\n  const list=new Set(notesByFrame[i]);\n  for(const [m,t] of count){if(!list.has(m)){if(i-t.from>=3)output.push({midi:m,start:t.from*step,duration:(i-t.from)*step,source:'analyzed'});count.delete(m)}}\n  for(const m of list)if(!count.has(m))count.set(m,{from:i});\n }\n for(const [m,t] of count)if(notesByFrame.length-t.from>=3)output.push({midi:m,start:t.from*step,duration:(notesByFrame.length-t.from)*step,source:'analyzed'});\n output.sort((a,b)=>a.start-b.start||a.midi-b.midi);\n // Merge brief neighboring notes of same pitch to remove fragmentation.\n const merged=[];\n for(const n of output){const last=merged.findLast(x=>x.midi===n.midi&&n.start-(x.start+x.duration)<.10&&n.start>=x.start);\n  if(last)last.duration=n.start+n.duration-last.start;else merged.push(n);\n }\n postMessage({done:true,notes:merged.slice(0,4000),duration:data.length/rate});\n }catch(err){postMessage({error:String(err?.message||err)})}\n};";
   const objectURL=URL.createObjectURL(new Blob([workerCode],{type:'application/javascript'}));
   const worker=new Worker(objectURL);rollState.worker=worker;
-  const notes=await new Promise((resolve,reject)=>{worker.onmessage=e=>{if(e.data.progress!==undefined){prog.value=e.data.progress;msg.textContent='Membaca nada... '+e.data.progress+'%'}if(e.data.done)resolve(e.data.notes)};worker.onerror=reject;worker.postMessage({buffer:raw.buffer},[raw.buffer])});
+  const notes=await new Promise((resolve,reject)=>{worker.onmessage=e=>{if(e.data.error)reject(new Error(e.data.error));if(e.data.progress!==undefined){prog.value=e.data.progress;msg.textContent='Membaca nada... '+e.data.progress+'%'}if(e.data.done)resolve(e.data.notes)};worker.onerror=reject;worker.postMessage({buffer:raw.buffer,mode:$('#analysis-mode').value},[raw.buffer])});
   worker.terminate();rollState.worker=null;URL.revokeObjectURL(objectURL);
   stopRoll();rollState.notes=notes;rollState.seconds=Math.max(16,max);rollState.playhead=-2.8;renderRoll();prog.value=100;
-  msg.textContent=`Selesai: ${notes.length} nada terdeteksi. Koreksi hasilnya di piano roll.`;document.querySelector('.roll-panel')?.scrollIntoView({behavior:'smooth',block:'start'});
-  if(!notes.length)toast('Nada belum terbaca. Coba pilih tab bersuara atau bagian piano yang lebih jelas.');
- }catch(err){msg.textContent='Analisis gagal: '+err.message;toast('Audio tidak bisa dianalisis di browser ini.');}
- finally{btn.disabled=false;btn.textContent='♫ Deteksi melodi dari audio';}
+  msg.textContent=`Selesai: ${notes.length} nada terdeteksi. Klik ↓ MIDI untuk mengunduh. Periksa dan koreksi hasilnya sebelum latihan.`;document.querySelector('.roll-panel')?.scrollIntoView({behavior:'smooth',block:'start'});
+  if(!notes.length)toast('Tidak terdeteksi nada. Periksa rekamannya di pemutar audio, lalu pilih mode Melodi utama.');
+ }catch(err){if(rollState.worker){rollState.worker.terminate();rollState.worker=null;}msg.textContent='Analisis gagal: '+(err.message||err);toast('Deteksi audio gagal. Coba file WAV/MP3 atau pilih mode Melodi utama.');}
+ finally{btn.disabled=false;btn.textContent='♫ Deteksi Audio → MIDI';}
 }
 function initTranscription(){
  renderRoll();$('#open-source').addEventListener('click',openReference);$('#capture-start').addEventListener('click',startTabCapture);$('#capture-stop').addEventListener('click',finishTabCapture);
@@ -572,9 +545,13 @@ function initTranscription(){
 function wireEvents(){
  $$('.nav-link').forEach(b=>b.addEventListener('click',()=>switchPage(b.dataset.page)));
  $('#mobile-menu').addEventListener('click',()=>$('#sidebar').classList.toggle('is-open'));
+ $('#sidebar-toggle').addEventListener('click',()=>{const collapsed=document.body.classList.toggle('sidebar-collapsed');$('#sidebar-toggle').setAttribute('aria-expanded',String(!collapsed));$('#sidebar-toggle').title=collapsed?'Buka sidebar':'Lipat sidebar';try{localStorage.setItem('ca-sidebar-collapsed',collapsed?'1':'0')}catch(_){}requestAnimationFrame(resizeFallCanvas)});
+ try{if(localStorage.getItem('ca-sidebar-collapsed')==='1'){document.body.classList.add('sidebar-collapsed');$('#sidebar-toggle').setAttribute('aria-expanded','false')}}catch(_){}
+ if(typeof ResizeObserver!=='undefined'){new ResizeObserver(()=>{if(fallCanvasReady)resizeFallCanvas()}).observe($('#fall-scroller'));}
+
  $('#chord-guide-toggle').addEventListener('click',()=>{chordGuideEnabled=!chordGuideEnabled;$('#chord-guide-toggle').textContent=chordGuideEnabled?'Sembunyikan panduan chord':'Lihat posisi chord';$('#chord-guide-toggle').setAttribute('aria-pressed',String(chordGuideEnabled));paintPiano();});
- $$('[data-piano-jump]').forEach(b=>b.addEventListener('click',()=>jumpToPiano(b.dataset.pianoJump,'main')));
- $$('[data-fall-jump]').forEach(b=>b.addEventListener('click',()=>jumpToPiano(b.dataset.fallJump,'fall')));
+ 
+ 
  $('#keys-label-toggle').addEventListener('click',()=>{const on=$('#piano').classList.toggle('show-all-notes');$('#keys-label-toggle').setAttribute('aria-pressed',String(on));$('#keys-label-toggle').textContent=on?'Sembunyikan nama nada':'Tampilkan semua nada'});
  $('#quick-start').addEventListener('click',()=>{state.style='major';switchPage('paths');setPreset('1452')});
  $('#help-button').addEventListener('click',()=>$('#help-dialog').showModal());$('#close-help').addEventListener('click',()=>$('#help-dialog').close());$('#help-done').addEventListener('click',()=>$('#help-dialog').close());

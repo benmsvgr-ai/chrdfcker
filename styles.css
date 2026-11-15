@@ -154,3 +154,32 @@
 #fall-canvas{max-width:none}.fall-counter{position:sticky;left:calc(100% - 140px);max-width:max-content}
 .roll-range-row{margin-top:4px;margin-bottom:8px}.roll-range-row .piano-range-label{font-size:10px}
 @media(max-width:670px){.piano-range-row{gap:6px}.piano-range-label{font-size:10px}.range-chip{font-size:10px;padding:5px 7px}.roll-range-row .piano-range-label{width:100%}.piano-dock .piano-keyboard{height:156px}.piano-inner .white-key{font-size:8px}}
+
+/* v6: full width, collapsible sidebar, zero horizontal piano scrolling */
+html,body{overflow-x:hidden}
+.content{width:100%;max-width:none;margin:0;padding:14px 16px 44px}
+.roll-panel{width:100%;max-width:none;padding:16px}
+.transcribe-grid{grid-template-columns:minmax(0,1fr);gap:0}
+.transcribe-info{display:none}
+.piano-dock .piano-keyboard{overflow:hidden!important;touch-action:manipulation}
+.piano-dock .piano-keyboard .piano-inner{width:100%!important;min-width:0!important}
+.piano-inner .white-key{min-width:0!important;max-width:none!important;border-radius:0 0 2px 2px;font-size:clamp(0px,.56vw,10px)}
+.piano-inner .black-key{min-width:0!important;max-width:none!important;border-radius:0 0 2px 2px}
+.fall-scroller{overflow-x:hidden!important;width:100%;max-width:100%}
+.fall-stage{width:100%!important;min-width:0!important}
+#fall-canvas{width:100%!important;height:460px!important;max-width:100%!important}
+.fall-keys{width:100%!important;min-width:0!important;height:120px}
+.fall-counter{position:absolute;right:12px;left:auto}
+.sidebar-toggle{display:inline-flex;align-items:center;justify-content:center;margin-right:11px;flex:0 0 auto;width:35px;height:35px;font-size:18px}
+body.sidebar-collapsed .sidebar{flex:0 0 67px!important;width:67px!important;padding:20px 9px!important}
+body.sidebar-collapsed .sidebar .brand{padding:4px 3px 28px!important}
+body.sidebar-collapsed .sidebar .brand>div:last-child,body.sidebar-collapsed .sidebar .sidebar-label,body.sidebar-collapsed .sidebar .quick-card,body.sidebar-collapsed .sidebar .sidebar-bottom,body.sidebar-collapsed .sidebar .nav-link span:not(.nav-ico){display:none!important}
+body.sidebar-collapsed .sidebar .nav-link{padding:9px!important;justify-content:center!important}
+body.sidebar-collapsed .sidebar .nav-ico{flex:0 0 28px}
+body.sidebar-collapsed .content{width:100%}
+.analysis-choice{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin:15px 0 10px}
+.analysis-choice label{font-size:10px;font-weight:760;color:#8addd6;letter-spacing:1px}
+.analysis-choice select{min-width:min(100%,320px);flex:1;border:1px solid #47627f;background:#13273c;border-radius:8px;color:#e0f7fe;padding:9px 11px}
+@media(min-width:671px){body.sidebar-collapsed .sidebar{transform:none!important}}
+@media(max-width:1050px) and (min-width:671px){body:not(.sidebar-collapsed) .sidebar{flex-basis:215px;width:215px;padding:20px 12px}body:not(.sidebar-collapsed) .sidebar .brand>div:last-child,body:not(.sidebar-collapsed) .sidebar .sidebar-label,body:not(.sidebar-collapsed) .sidebar .quick-card,body:not(.sidebar-collapsed) .sidebar .sidebar-bottom,body:not(.sidebar-collapsed) .sidebar .nav-link span:not(.nav-ico){display:initial}}
+@media(max-width:670px){.sidebar-toggle{display:none}.transcribe-grid{grid-template-columns:1fr}.content{padding:10px 8px 35px}.roll-panel{padding:10px}.fall-keys{height:88px}.piano-inner .white-key{font-size:0!important}.piano-inner .black-key{font-size:0!important}}
