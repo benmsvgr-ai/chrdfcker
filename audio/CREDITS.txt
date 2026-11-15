@@ -1,0 +1,9 @@
+Acoustic Grand Piano samples generated from the TimGM6mb SoundFont
+Copyright (C) 2004 Tim Brechbill; 2010 David Bolton.
+License: GNU General Public License version 2 (GPL-2.0-only).
+Rendering program: FluidSynth, Acoustic Grand Piano / program 0.
+Derived samples: notes MIDI 36..84 every 3 semitones, 24 kHz, MP3 56 kbps.
+Source for original soundfont: https://github.com/musescore/musescore-old
+Upstream website: https://www.timbrechbill.com/saxguru/Timidity.php
+Source soundfont filename: TimGM6mb.sf2
+GNU GPL v2 full text at ../LICENSE.
