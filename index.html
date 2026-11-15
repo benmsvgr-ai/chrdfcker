@@ -8,9 +8,9 @@
 <meta content="Chord Atlas: piano sampel akustik, cheat sheet musik, circle of fifths, jalur chord, belajar notasi, serta piano roll lokal." name="description"/>
 <title>Chord Atlas — Explore music, your way</title>
 <link href="favicon.svg" rel="icon" type="image/svg+xml"/>
-<link href="styles.css?v=9.0.0" rel="stylesheet"/>
+<link href="styles.css?v=11.0.0" rel="stylesheet"/>
 <script defer="" src="audio-bank.js?v=7.0.0"></script>
-<script defer="" src="app.js?v=9.0.0"></script>
+<script defer="" src="app.js?v=11.0.0"></script>
 </head>
 <body>
 <div aria-hidden="true" class="backdrop"><div class="ambient ambient-a"></div><div class="ambient ambient-b"></div><div class="noise"></div></div>
@@ -26,14 +26,14 @@
 </nav>
 <div class="sidebar-label second">QUICK START</div>
 <div class="quick-card"><div class="quick-eyebrow"><span class="pulse-dot"></span> LATIHAN HARI INI</div><div class="quick-title">Dari I ke IV ke V</div><p>Coba progresi sederhana. Dengarkan, lalu kembangkan jalurnya.</p><button class="text-action" id="quick-start">Mulai latihan <span>↗</span></button></div>
-<div class="sidebar-bottom"><div class="online-indicator"><span></span> Suara piano offline • Tanpa API</div><div class="version">CHORD ATLAS <span>INSTRUMENT STUDIO</span></div></div>
+<div class="sidebar-bottom"><div class="online-indicator"><span></span> Suara piano offline • Tanpa API</div><div class="version">CHORD ATLAS <span>11 / PIANO AI</span></div></div>
 </aside>
 <div class="main-wrap">
 <header class="topbar">
 
 <button aria-label="Buka menu" class="mobile-menu icon-btn" id="mobile-menu">☰</button>
 <div class="breadcrumb"><span class="muted">WORKSPACE</span><span class="slash">/</span><span id="breadcrumb-name">PIANO STUDIO</span></div>
-<div class="top-actions"><div class="head-tag"><i></i> ENGINE READY</div><button aria-label="Bantuan" class="icon-btn help-btn" id="help-button" title="Bantuan">?</button></div>
+<div class="top-actions"><div class="head-tag"><i></i> PIANO READY</div><button aria-label="Bantuan" class="icon-btn help-btn" id="help-button" title="Bantuan">?</button></div>
 </header>
 <main class="content"><article class="panel keyboard-panel piano-dock"><div class="section-heading"><div><div class="eyebrow tiny">LIVE PIANO / SEMUA MENU</div><h2>Piano Studio</h2></div><button type="button" aria-label="Lipat atau buka sidebar" aria-expanded="true" class="icon-btn sidebar-toggle" id="sidebar-toggle" title="Lipat sidebar">☰</button><div class="keyboard-tools"><button aria-pressed="false" class="outline-btn small" id="keys-label-toggle" type="button">Tampilkan semua nada</button><button aria-pressed="false" class="outline-btn small" id="chord-guide-toggle" type="button">Lihat posisi chord</button><span class="audio-pill"><span class="audio-led"></span><span id="sample-status">Piano akustik · siap dimuat</span></span><span class="mini muted" id="keyboard-caption">Klik tuts untuk bunyi</span><button class="outline-btn small" id="audio-test" title="Tes bunyi Do tengah">▶ Tes suara</button><button class="outline-btn small" id="play-scale">▶ Mainkan scale</button></div></div><div class="piano-range-row"><span class="piano-range-label">88 TUTS · A0–C8 · SEMUA TAMPIL TANPA GESER</span></div><div aria-label="Keyboard piano, klik untuk membunyikan nada" class="piano-keyboard" id="piano" role="group"></div><div class="piano-legend"><span><i class="legend-dot blue"></i> Kiri · saat panduan aktif</span><span><i class="legend-dot orange"></i> Kanan · saat panduan aktif</span><span><i class="legend-dot violet"></i> Nada scale</span><span class="legend-hint">Tuts bisa dimainkan pakai mouse/touch</span></div></article>
 
@@ -52,7 +52,7 @@
 <article class="panel cheat-modes"><div class="section-heading"><h2>7 modes dan warna scale</h2></div><div class="mode-grid" id="cheat-modes"></div></article>
 </div>
 </section><section aria-label="Transkripsi Lagu dan Piano Roll" class="page" id="page-transcribe">
-<div class="page-caption"><div><div class="eyebrow tiny">TRANSCRIBE / EDIT / PRACTICE</div><h2>Transkripsi Lagu</h2><p>Tempel video YouTube, putar di sini, rekam audio tab ini, lalu lihat hasilnya di piano roll.</p></div><span class="small-chip">LOCAL-FIRST</span></div>
+<div class="page-caption"><div><div class="eyebrow tiny">TRANSCRIBE / EDIT / PRACTICE</div><h2>Transkripsi Lagu</h2><p>Putar video, tangkap audio tab ini, lalu pilih transkripsi biasa atau mesin Piano AI Studio.</p></div><button type="button" class="outline-btn small" id="jump-ai-studio">♫ Ke Piano AI Studio ↓</button></div>
 <div class="transcribe-grid">
 <article class="panel transcribe-input"><div class="section-heading"><div><div class="eyebrow tiny">01 / SUMBER LAGU</div><h2>Ambil referensi</h2></div></div>
 <label for="source-link">TAUTAN YOUTUBE / INSTAGRAM</label><div class="link-input-row"><input autocomplete="off" id="source-link" placeholder="https://www.youtube.com/watch?v=..." type="url"/><button class="outline-btn" id="open-source" type="button">Buka</button></div>
@@ -87,6 +87,50 @@
 </article>
 <article class="panel transcribe-info"><div class="eyebrow tiny">02 / APA YANG BISA DIKULIK?</div><h2>Latihan pakai piano roll</h2><div class="transcribe-facts"><div><b>Deteksi nada</b><span>Pilih fokus instrumen. MIDI multi-track dapat disaring per instrumen; audio campuran tetap perkiraan.</span></div><div><b>Edit manual</b><span>Klik grid untuk tambah nada; klik balok nada untuk hapus</span></div><div><b>Putar &amp; ekspor</b><span>Preview bunyi piano, atur tempo dan unduh hasil sebagai MIDI</span></div></div><p class="truth-note">Pilihan instrumen dari audio campuran bukan isolasi suara. Mode AI Piano memuat model sekitar 30 MB saat pertama dipakai, memerlukan internet, dan dapat menggunakan memori serta waktu proses yang lebih besar. Gunakan rekaman piano yang jelas untuk hasil terbaik. Fitur Tangkap Audio Tab memerlukan izin Chrome. Memasukkan link saja belum otomatis menyalin suara video. Analisis lokal paling cocok untuk melodi atau piano yang jelas; lagu campuran belum otomatis menghasilkan semua chord secara akurat. Untuk hasil tepat, gunakan MIDI.</p></article>
 </div>
+<article class="panel ai-piano-panel" id="ai-piano-studio" aria-label="Piano AI Studio lokal">
+ <div class="section-heading ai-studio-head">
+  <div><div class="eyebrow tiny">PIANO AI STUDIO / MESIN LOKAL</div><h2>Pisahkan piano. Mainkan. Kembangkan.</h2><p>Ambil audio dari video yang direkam di atas atau unggah lagu. Dengarkan stem piano, lihat notnya, lalu buat versi baru.</p></div>
+  <span class="ai-server-pill" id="ai-server-status" aria-live="polite">Mesin belum dicek</span>
+ </div>
+ <div class="ai-flow-steps" aria-label="Alur Piano AI">
+  <span>01 · Ambil audio</span><b>›</b><span>02 · Pisahkan piano</span><b>›</b><span>03 · Piano Roll + MIDI</span><b>›</b><span>04 · Kembangkan</span>
+ </div>
+ <div class="ai-studio-grid">
+  <div class="ai-studio-block">
+   <div class="ai-block-heading"><strong>01 — Ambil piano dari lagu</strong><button class="outline-btn small" id="ai-check-engine" type="button">Cek mesin lokal</button></div>
+   <p class="ai-subhelp">Pakai rekaman dari tombol <b>Rekam Video Ini</b> di atas, atau pilih file audio. Audio video di dalam YouTube tidak bisa diambil diam-diam dari iframe.</p>
+   <div class="ai-form-row"><label for="ai-stem-mode">HASIL YANG DIINGINKAN</label>
+    <select id="ai-stem-mode">
+     <option value="piano">Piano saja (Demucs · eksperimental)</option>
+     <option value="keyboard">Keyboard / Synth (stem other · campuran)</option>
+     <option value="clean">Audio piano sudah bersih (tanpa pemisahan)</option>
+    </select>
+   </div>
+   <button class="primary-btn ai-action" id="ai-run-separate" type="button">♫ Pisahkan & baca not piano</button>
+   <div class="ai-progress-wrap"><progress id="ai-worker-progress" max="100" value="0"></progress><p id="ai-worker-message" role="status">Belum diproses. Mesin AI lokal perlu dipasang satu kali di Windows.</p></div>
+   <div class="ai-stem-result" id="ai-stem-result" hidden>
+    <div class="ai-result-label">HASIL AUDIO · DENGAR PIANO SAJA</div><audio id="ai-stem-audio" controls preload="none"></audio>
+    <div class="ai-result-links"><a id="ai-stem-save" target="_blank" rel="noopener">Unduh stem WAV</a><a id="ai-midi-save" target="_blank" rel="noopener">Unduh hasil MIDI</a></div>
+    <p class="ai-caution" id="ai-result-warning"></p>
+   </div>
+  </div>
+  <div class="ai-studio-block">
+   <div class="ai-block-heading"><strong>02 — Kembangkan permainan piano</strong><span class="ai-tag">LANJUTAN / VARIASI</span></div>
+   <p class="ai-subhelp">Dari MIDI yang ada di piano roll, buat solo baru atau beberapa bar berikutnya. Nada sumber dan kreasi baru tetap bisa dibedakan.</p>
+   <div class="ai-form-row"><label for="ai-gen-method">MESIN KREASI</label><select id="ai-gen-method"><option value="ollama">AI Lokal · Ollama</option><option value="variation">Variasi otomatis (tanpa AI)</option></select></div>
+   <div class="ai-form-columns">
+    <div class="ai-form-row"><label for="ai-gen-style">GAYA</label><select id="ai-gen-style"><option value="fusion">Jazz Fusion</option><option value="jazz">Jazz</option><option value="ballad">Ballad</option><option value="pop">Pop</option></select></div>
+    <div class="ai-form-row"><label for="ai-gen-bars">PANJANG</label><select id="ai-gen-bars"><option value="4">4 bar</option><option value="8" selected>8 bar</option><option value="16">16 bar</option></select></div>
+   </div>
+   <div class="ai-form-columns"><div class="ai-form-row"><label for="ai-gen-action">BUAT</label><select id="ai-gen-action"><option value="continue">Kelanjutan lagu</option><option value="variation">Alternatif permainan</option></select></div>
+   <div class="ai-form-row"><label for="ai-ollama-model">MODEL OLLAMA</label><input id="ai-ollama-model" value="qwen2.5:3b" spellcheck="false"/></div></div>
+   <button class="primary-btn ai-action" id="ai-generate" type="button">✦ Kembangkan Piano Roll</button>
+   <div class="ai-result-actions"><button class="outline-btn small" id="ai-restore-original" type="button" disabled>↶ Kembali ke hasil asli</button></div>
+   <p class="ai-caution" id="ai-gen-message" role="status">Mode AI perlu Ollama aktif. Variasi otomatis tetap bisa dipakai tanpa model generatif, tetapi mesin lokal harus berjalan.</p>
+  </div>
+ </div>
+ <p class="ai-studio-truth"><b>Batasan:</b> Demucs dapat meninggalkan suara instrumen lain di stem piano, terutama lagu band fusion. Basic Pitch memberi not perkiraan. Ollama membuat ide permainan baru, bukan menyalin piano asli secara pasti. Model diunduh saat pertama dipakai dan pemrosesan dikerjakan di komputer lu, bukan di GitHub Pages.</p>
+</article>
 <article class="panel roll-panel"><div class="section-heading"><div><div class="eyebrow tiny">03 / PIANO ROLL BERJALAN</div><h2>Piano Roll Jatuh</h2></div><div class="roll-toolbar"><button class="outline-btn small" id="roll-play">▶ Putar</button><button class="outline-btn small" id="roll-stop">■ Stop</button><button class="outline-btn small" id="roll-demo">Contoh</button><button class="outline-btn small" id="roll-export">↓ MIDI</button><button class="outline-btn small" id="roll-clear">Hapus</button></div></div>
 <div class="roll-controls"><label>BPM <input id="roll-bpm" max="240" min="40" type="number" value="110"/></label><label>Zoom <input id="roll-zoom" max="150" min="45" type="range" value="75"/></label><label class="midi-volume-control" for="roll-volume"><span>♫ Volume MIDI</span><input id="roll-volume" type="range" min="50" max="250" step="10" value="200" aria-label="Volume MIDI piano roll"/><strong id="roll-volume-value" aria-live="polite">200%</strong></label><span id="roll-info">0 nada · klik grid untuk mulai</span></div>
 <div class="fall-controls"><label class="fall-speed-label" for="fall-speed">Kecepatan <select id="fall-speed"><option value="0.5">0.5×</option><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option></select></label><span id="fall-current-time">00:00 / 00:16</span><button id="roll-edit-toggle" class="outline-btn small" type="button" aria-expanded="false">✎ Editor nada</button></div>
@@ -94,13 +138,13 @@
 <div class="piano-range-row roll-range-row"><span class="piano-range-label">88 TUTS · A0–C8 · SEJAJAR DENGAN BALOK NADA</span></div><div class="fall-scroller" id="fall-scroller"><div class="fall-stage" id="fall-stage"><canvas id="fall-canvas" height="380" width="1352" aria-label="Piano roll: balok nada turun menuju tuts mengikuti waktu"></canvas><div class="fall-keys" id="fall-keys" role="group" aria-label="Keyboard piano roll"></div><div class="fall-counter" id="fall-counter" aria-live="off">Siap dimainkan</div></div></div>
 <p class="fall-tip">Tekan <b>Contoh</b> untuk mencoba. Balok nada turun dan tuts menyala tepat saat bunyinya masuk. Impor MIDI untuk melihat lagu sendiri.</p>
 <div class="roll-editor-wrap" id="roll-editor-wrap" hidden><div class="editor-header">EDITOR MANUAL <span>Klik grid untuk menambah nada, klik balok untuk menghapus</span></div><div class="roll-scroll" id="roll-scroll"><div aria-label="Editor piano roll interaktif" class="roll-track" id="roll-track"></div></div></div>
-<div class="roll-legend"><span>● Ungu/biru: hasil transkripsi atau MIDI</span><span>● Oranye: nada tambahan</span><span>Nada bergerak vertikal • tuts aktif saat dimainkan</span></div></article>
+<div class="roll-legend"><span>● Ungu/biru: hasil transkripsi atau MIDI</span><span>● Oranye: tambahan manual</span><span>● Hijau: hasil pengembangan</span><span>Nada bergerak vertikal • tuts aktif saat dimainkan</span></div></article>
 </section><section aria-label="Belajar not balok" class="page" id="page-learn"><div class="learn-grid"><article class="panel learn-panel"><div class="section-heading"><div><div class="eyebrow tiny">READ THE MUSIC</div><h2>Kenalan dengan not balok</h2></div><span class="small-chip">BEGINNER FRIENDLY</span></div><div class="lesson-tabs"><button class="lesson-tab active" data-lesson="notes">Mengenal nada</button><button class="lesson-tab" data-lesson="chords">Membaca chord</button><button class="lesson-tab" data-lesson="rhythm">Nilai ketukan</button></div><p class="sublead" id="lesson-intro">Klik sebuah nada. Perhatikan letaknya di garis paranada dan tuts piano.</p><div class="staff-viewport"><svg aria-label="Not balok interaktif" id="staff-svg" role="img" viewbox="0 0 750 315"></svg></div><div class="note-picker" id="note-picker"></div><div class="lesson-explain" id="lesson-explain"></div></article><article class="panel quiz-panel"><div class="eyebrow tiny">QUICK PRACTICE</div><h2>Tebak nadanya</h2><div class="quiz-intro">Latihan singkat untuk membiasakan membaca not.</div><div class="quiz-progress"><span id="quiz-streak">0 benar berturut-turut</span><span id="quiz-score">0 / 0</span></div><div class="quiz-note" id="quiz-note">♪</div><div class="mini muted center">NOT DI ATAS ADALAH...</div><div class="quiz-options" id="quiz-options"></div><div aria-live="polite" class="quiz-feedback" id="quiz-feedback">Pilih jawaban untuk mulai.</div><button class="outline-btn fill" id="next-question">Soal berikutnya →</button></article></div></section>
 </main>
 <footer class="footer"><span>© <span id="year"></span> CHORD ATLAS · BUILT FOR MUSICIANS</span><span>PLAY • EXPLORE • CREATE <span class="footer-star">✧</span></span></footer>
 </div>
 </div>
 <div aria-live="polite" class="toast" id="toast" role="status"></div>
-<dialog class="help-dialog" id="help-dialog"><div class="dialog-top"><h2>Mulai di Chord Atlas</h2><button aria-label="Tutup" class="icon-btn" id="close-help">✕</button></div><p><b>Cheat Sheet</b> — pilih key dan lihat scale, interval, mode serta chord mayor/minor.</p><p><b>Piano Studio</b> — pilih chord, tekan ▶, dan lihat tuts kiri/kanan yang menyala.</p><p><b>Circle of Fifths</b> — klik lingkaran untuk mengganti nada dasar dan melihat keluarga chord.</p><p><b>Chord Journey</b> — mulai dari I–IV–V–ii atau jalur lain; klik cabang rekomendasi untuk meneruskan progresi. Tombol MIDI mengunduh hasil untuk DAW.</p><p><b>Belajar Notasi</b> — kenali letak nada, chord, ritme, lalu coba kuis singkat.</p><p>Piano memakai sampel akustik yang sudah tersedia di paket, tanpa unduhan atau API. Klik tuts atau Tes suara untuk mulai. Berbagai fitur berjalan sepenuhnya di browser.</p><button class="primary-btn" id="help-done">Oke, mulai main</button></dialog>
+<dialog class="help-dialog" id="help-dialog"><div class="dialog-top"><h2>Mulai di Chord Atlas</h2><button aria-label="Tutup" class="icon-btn" id="close-help">✕</button></div><p><b>Cheat Sheet</b> — pilih key dan lihat scale, interval, mode serta chord mayor/minor.</p><p><b>Piano Studio</b> — pilih chord, tekan ▶, dan lihat tuts kiri/kanan yang menyala.</p><p><b>Circle of Fifths</b> — klik lingkaran untuk mengganti nada dasar dan melihat keluarga chord.</p><p><b>Chord Journey</b> — mulai dari I–IV–V–ii atau jalur lain; klik cabang rekomendasi untuk meneruskan progresi. Tombol MIDI mengunduh hasil untuk DAW.</p><p><b>Belajar Notasi</b> — kenali letak nada, chord, ritme, lalu coba kuis singkat.</p><p>Piano memakai sampel akustik yang sudah tersedia di paket, tanpa unduhan atau API. Klik tuts atau Tes suara untuk mulai. Fitur Piano AI Studio membutuhkan mesin pemrosesan lokal di Windows; transkripsi biasa dan piano tetap berjalan di browser.</p><button class="primary-btn" id="help-done">Oke, mulai main</button></dialog>
 </body>
 </html>

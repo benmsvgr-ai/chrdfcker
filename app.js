@@ -292,10 +292,10 @@ function drawFallingRoll(){
   if(yBottom<0||yTop>h)continue;
   const pos=fallPosition(n.midi),x=pos.x+2,width=pos.w-4,top=Math.max(-2,yTop),bottom=Math.min(h+2,yBottom),height=Math.max(0,bottom-top);
   if(height<1)continue;
-  const active=n.start<=now&&now<n.start+n.duration,low=n.midi<60,manual=n.source==='manual';
-  let topColor=manual?'#ffcc85':low?'#9ad2ff':'#c9a6ff',baseColor=manual?'#e98a43':low?'#338cd3':'#8a58d9';
+  const active=n.start<=now&&now<n.start+n.duration,low=n.midi<60,manual=n.source==='manual',generated=['ai-generated','arranged'].includes(n.source);
+  let topColor=generated?'#9cf7d1':manual?'#ffcc85':low?'#9ad2ff':'#c9a6ff',baseColor=generated?'#18a981':manual?'#e98a43':low?'#338cd3':'#8a58d9';
   const grad=ctx.createLinearGradient(x,top,x+width,top);grad.addColorStop(0,baseColor);grad.addColorStop(.55,topColor);grad.addColorStop(1,baseColor);
-  ctx.fillStyle=grad;ctx.shadowBlur=active?18:6;ctx.shadowColor=manual?'#ffbd75bb':low?'#5daafc88':'#c493ff88';
+  ctx.fillStyle=grad;ctx.shadowBlur=active?18:6;ctx.shadowColor=generated?'#63ffc8bb':manual?'#ffbd75bb':low?'#5daafc88':'#c493ff88';
   ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x,top,width,height,Math.min(5,height/2));else ctx.rect(x,top,width,height);ctx.fill();ctx.shadowBlur=0;
   ctx.fillStyle='#ffffff7a';ctx.fillRect(x+2,top+2,Math.max(1,width-4),Math.min(2,height-2));
   if(height>30&&width>24){ctx.fillStyle='#101526';ctx.font='bold 10px system-ui';ctx.fillText(noteName(n.midi),x+4,Math.min(bottom-5,top+17));}
@@ -319,7 +319,7 @@ function renderRoll(){
  let grid=`<div class="roll-background" style="width:${width}px;height:${height}px"></div>`;
  for(let note=ROLL_HIGH;note>=ROLL_LOW;note--){const y=(ROLL_HIGH-note)*ROLL_H;grid+=`<div class="roll-row ${[1,3,6,8,10].includes(note%12)?'sharprow':''}" style="top:${y}px;width:${width}px"><span class="roll-note-label">${shortName(note)}</span></div>`}
  for(let i=0;i<=beats;i++){const x=i*beat*zoom;grid+=`<div class="roll-beat ${i%4===0?'is-bar':''}" style="left:${x}px;height:${height}px">${i%4===0?'<span class="roll-bar-number">'+(Math.floor(i/4)+1)+'</span>':''}</div>`}
- rollState.notes.forEach((n,i)=>{const x=Math.max(0,n.start*zoom),w=Math.max(9,n.duration*zoom-2),y=(ROLL_HIGH-n.midi)*ROLL_H+2;if(n.midi<ROLL_LOW||n.midi>ROLL_HIGH)return;grid+=`<button class="roll-note ${n.source==='manual'?'manual':''}" data-roll-note="${i}" style="left:${x}px;top:${y}px;width:${w}px;height:${ROLL_H-3}px" title="${shortName(n.midi)} · ${n.start.toFixed(2)}s (klik hapus)">${shortName(n.midi)}</button>`});
+ rollState.notes.forEach((n,i)=>{const x=Math.max(0,n.start*zoom),w=Math.max(9,n.duration*zoom-2),y=(ROLL_HIGH-n.midi)*ROLL_H+2;if(n.midi<ROLL_LOW||n.midi>ROLL_HIGH)return;grid+=`<button class="roll-note ${n.source==='manual'?'manual':(['ai-generated','arranged'].includes(n.source)?'generated':'')}" data-roll-note="${i}" style="left:${x}px;top:${y}px;width:${w}px;height:${ROLL_H-3}px" title="${shortName(n.midi)} · ${n.start.toFixed(2)}s (klik hapus)">${shortName(n.midi)}</button>`});
  grid+=`<div id="roll-playhead" class="roll-playhead" style="left:${rollState.playhead*zoom}px;height:${height}px"></div>`;
  const el=$('#roll-track');el.style.width=width+'px';el.style.height=height+'px';el.innerHTML=grid;
  $('#roll-info').textContent=`${rollState.notes.length} nada · ${Math.round(length)} detik · editor tersedia`;
@@ -518,7 +518,7 @@ async function startTabCapture(){
    if(blob.size<1500){captureMessage('Rekaman kosong. Pastikan tab video sedang diputar dan “Bagikan audio tab” aktif.');return;}
    try{
     if(rollState.objectURL)URL.revokeObjectURL(rollState.objectURL);
-    rollState.objectURL=URL.createObjectURL(blob);rollState.sourceBuffer=await blob.arrayBuffer();rollState.sourcePCM=null;rollState.midiAll=null;$('#midi-track-info').hidden=true;
+    rollState.objectURL=URL.createObjectURL(blob);rollState.sourceBuffer=await blob.arrayBuffer();rollState.sourcePCM=null;rollState.filename='rekaman-tab.webm';rollState.midiAll=null;$('#midi-track-info').hidden=true;
     $('#audio-reference').src=rollState.objectURL;$('#analyze-audio').disabled=false;
     captureMessage('Rekaman berhasil ('+Math.round(blob.size/1024)+' KB). Pilih metode analisis di bawah lalu klik Analisis Audio → MIDI. Rekaman tidak diputar ulang, jadi tidak menggema.');
     $('#analysis-message').textContent='Rekaman diterima. Pilih AI Piano Solo untuk rekaman piano, atau mode cepat untuk melodi tunggal.';
@@ -775,6 +775,119 @@ function wireEvents(){
  document.addEventListener('keyup',e=>activeKeys.delete(keyMap[e.key.toLowerCase()]));
  document.addEventListener('pointerdown',e=>{if(window.innerWidth<670&&$('#sidebar').classList.contains('is-open')&&!$('#sidebar').contains(e.target)&&!$('#mobile-menu').contains(e.target))$('#sidebar').classList.remove('is-open')});
 }
-function init(){restoreLocal();initControls();createKeyboard();wireEvents();renderStudio();renderCircle();if(hadSavedJourney)renderJourney();else setPreset('1452');renderLearning();renderCheatSheet();initTranscription();sampleIndicator('Grand Piano · tekan tuts atau Tes suara');}
+// --- CHORD ATLAS v11: Optional local Piano AI Studio. Original menus unchanged. ---
+const AI_LOCAL_URL='http://127.0.0.1:8765';
+const aiStudio={connected:false,original:null,jobId:null,processing:false,lastMidiUrl:null};
+function aiReport(message,kind='normal'){
+ const el=$('#ai-worker-message');if(el)el.textContent=message;
+ if(kind==='error')toast(message.slice(0,140));
+}
+async function checkAiEngine(){
+ const badge=$('#ai-server-status');badge.textContent='Menghubungkan...';badge.classList.remove('ok','bad');
+ try{
+  const controller=new AbortController(),t=setTimeout(()=>controller.abort(),4500);
+  let response;try{response=await fetch(AI_LOCAL_URL+'/health',{signal:controller.signal,cache:'no-store'});}finally{clearTimeout(t)}
+  if(!response.ok)throw new Error('Server lokal belum siap ('+response.status+')');
+  const info=await response.json();if(!info.ok)throw new Error('Balasan mesin tidak valid.');
+  aiStudio.connected=true;badge.classList.add('ok');badge.textContent='Mesin lokal terhubung';
+  const missing=[];if(!info.ffmpeg)missing.push('FFmpeg');if(!info.separation)missing.push('Demucs');if(!info.transcription)missing.push('Basic Pitch');
+  aiReport(missing.length?'Mesin tersambung, tetapi perlu pasang: '+missing.join(', '):'Mesin siap. Pilih rekaman audio dan proses. Model pertama kali harus diunduh.');
+  return true;
+ }catch(err){
+  aiStudio.connected=false;badge.classList.add('bad');badge.textContent='Mesin belum jalan';
+  aiReport('Mesin lokal belum terhubung. Jalankan engine/START_WINDOWS.bat pada komputer ini. '+(err.name==='AbortError'?'Permintaan terlalu lama.':err.message));
+  return false;
+ }
+}
+function aiSourceFile(){
+ if(!rollState.sourceBuffer)return null;
+ const name=rollState.filename||'rekaman-tab.webm';
+ const ext=name.split('.').pop().toLowerCase();
+ const mime=ext==='wav'?'audio/wav':ext==='mp3'?'audio/mpeg':ext==='m4a'?'audio/mp4':ext==='ogg'?'audio/ogg':'audio/webm';
+ return new File([rollState.sourceBuffer],name,{type:mime});
+}
+async function aiEngineJSON(endpoint,options){
+ const r=await fetch(AI_LOCAL_URL+endpoint,options);
+ let data=null;try{data=await r.json()}catch(_){throw new Error('Balasan mesin AI tidak dapat dibaca ('+r.status+').')}
+ if(!r.ok)throw new Error(typeof data.detail==='string'?data.detail:(data.message||'Mesin AI gagal ('+r.status+').'));
+ return data;
+}
+async function aiSeparateAndTranscribe(){
+ if(aiStudio.processing)return;
+ const source=aiSourceFile();if(!source){aiReport('Belum ada audio. Rekam video di Sumber Lagu (Rekam Video Ini) atau unggah WAV/MP3 terlebih dahulu.','error');return;}
+ if(!(await checkAiEngine()))return;
+ const button=$('#ai-run-separate');button.disabled=true;aiStudio.processing=true;
+ const progress=$('#ai-worker-progress');progress.value=3;
+ $('#ai-stem-result').hidden=true;
+ aiReport('Mengirim rekaman ke mesin lokal...');
+ try{
+  const form=new FormData();form.append('audio',source);form.append('mode',$('#ai-stem-mode').value);
+  const accepted=await aiEngineJSON('/api/process',{method:'POST',body:form});aiStudio.jobId=accepted.job_id;
+  // Polling reflects real processing state; never claims the result is complete ahead of the model.
+  for(let i=0;i<1800;i++){
+   await new Promise(resolve=>setTimeout(resolve,1000));
+   const job=await aiEngineJSON('/api/jobs/'+encodeURIComponent(aiStudio.jobId));
+   progress.value=Number(job.progress||0);aiReport((job.stage||'Memproses audio')+' · '+Math.round(job.progress||0)+'%');
+   if(job.status==='failed')throw new Error(job.error||'Pemrosesan audio gagal.');
+   if(job.status==='done'){
+    const audioLink=AI_LOCAL_URL+job.files.stem;
+    $('#ai-stem-audio').src=audioLink;
+    $('#ai-stem-save').href=audioLink;
+    $('#ai-midi-save').href=AI_LOCAL_URL+job.files.midi;
+    $('#ai-stem-result').hidden=false;
+    $('#ai-result-warning').textContent=job.warning||'Periksa audio stem dan akurasi not sebelum digunakan.';
+    const detected=(job.notes||[]).filter(n=>Number.isFinite(n.midi)&&Number.isFinite(n.start)&&Number.isFinite(n.duration));
+    if(detected.length){
+     aiStudio.original=rollState.notes.map(n=>({...n}));$('#ai-restore-original').disabled=false;
+     stopRoll();rollState.notes=detected.map(n=>({...n,source:'analyzed'}));
+     rollState.seconds=Math.max(16,detected.reduce((m,n)=>Math.max(m,n.start+n.duration),0)+2);
+     rollState.playhead=-2.8;rollState.midiAll=null;renderRoll();
+     aiReport('Stem tersedia untuk didengarkan. '+detected.length+' nada masuk Piano Roll. Ini hasil perkiraan AI, belum tentu tepat.');
+    }else aiReport('Stem piano berhasil dibuat, tapi tidak ada not yang terdeteksi. Dengarkan hasilnya atau coba mode Audio piano bersih.');
+    return;
+   }
+  }
+  throw new Error('Pekerjaan terlalu lama. Periksa terminal mesin lokal.');
+ }catch(err){aiReport('Gagal: '+err.message,'error');}
+ finally{aiStudio.processing=false;button.disabled=false;}
+}
+async function aiDevelopPiano(){
+ const notes=rollState.notes.map(n=>({midi:n.midi,start:n.start,duration:n.duration,velocity:n.velocity||85})).filter(n=>Number.isFinite(n.midi)&&Number.isFinite(n.start));
+ if(!notes.length){$('#ai-gen-message').textContent='Piano roll kosong. Analisis audio atau impor MIDI dulu, baru buat variasi.';return;}
+ if(!(await checkAiEngine()))return;
+ const btn=$('#ai-generate');btn.disabled=true;
+ const msg=$('#ai-gen-message');msg.textContent='Memproses ide permainan...';
+ try{
+  const bpm=Number($('#roll-bpm').value)||110;
+  const opts={notes:notes.slice(-1000),bpm,bars:Number($('#ai-gen-bars').value),style:$('#ai-gen-style').value,
+              method:$('#ai-gen-method').value,action:$('#ai-gen-action').value,model:$('#ai-ollama-model').value.trim()||'qwen2.5:3b'};
+  const result=await aiEngineJSON('/api/expand',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(opts)});
+  if(!Array.isArray(result.notes)||!result.notes.length)throw new Error('Tidak ada not baru yang dihasilkan.');
+  aiStudio.original=rollState.notes.map(n=>({...n}));$('#ai-restore-original').disabled=false;
+  stopRoll();rollState.notes=(opts.action==='variation'?result.notes:[...rollState.notes,...result.notes]);
+  rollState.seconds=Math.max(16,rollState.notes.reduce((m,n)=>Math.max(m,n.start+n.duration),0)+2);
+  rollState.playhead=-2.8;renderRoll();
+  msg.textContent=(opts.method==='ollama'?'AI Ollama':'Variasi otomatis')+': '+result.notes.length+' not baru. '+(result.warning||'Periksa hasilnya.')+' Klik Putar di Piano Roll.';
+  document.querySelector('.roll-panel')?.scrollIntoView({behavior:'smooth',block:'start'});
+ }catch(err){msg.textContent='Gagal: '+err.message;}
+ finally{btn.disabled=false;}
+}
+function aiRestoreOriginal(){
+ if(!aiStudio.original)return;
+ stopRoll();rollState.notes=aiStudio.original.map(n=>({...n}));
+ rollState.seconds=Math.max(16,rollState.notes.reduce((m,n)=>Math.max(m,n.start+n.duration),0)+2);
+ rollState.playhead=-2.8;renderRoll();$('#ai-gen-message').textContent='Versi sebelumnya dipulihkan.';
+ aiStudio.original=null;$('#ai-restore-original').disabled=true;
+}
+function initAiStudio(){
+ $('#jump-ai-studio').addEventListener('click',()=>$('#ai-piano-studio').scrollIntoView({behavior:'smooth',block:'start'}));
+ $('#ai-check-engine').addEventListener('click',checkAiEngine);
+ $('#ai-run-separate').addEventListener('click',aiSeparateAndTranscribe);
+ $('#ai-generate').addEventListener('click',aiDevelopPiano);
+ $('#ai-restore-original').addEventListener('click',aiRestoreOriginal);
+ $('#ai-gen-method').addEventListener('change',()=>{const ai=$('#ai-gen-method').value==='ollama';$('#ai-ollama-model').disabled=!ai;$('#ai-gen-message').textContent=ai?'Ollama harus berjalan di komputer. Model menghasilkan kreasi baru, bukan not asli.':'Variasi otomatis berbasis aturan musik, tidak memakai model AI.';});
+}
+
+function init(){restoreLocal();initControls();createKeyboard();wireEvents();renderStudio();renderCircle();if(hadSavedJourney)renderJourney();else setPreset('1452');renderLearning();renderCheatSheet();initTranscription();initAiStudio();sampleIndicator('Grand Piano · tekan tuts atau Tes suara');}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
