@@ -1,51 +1,18 @@
-# CHORD ATLAS v8 — Volume MIDI diperbesar
+# CHORD ATLAS v10 — Pilihan Instrumen
 
-Tambahan di atas seluruh fitur v7:
+Pilih fokus **Piano akustik, Keyboard / Synth / Organ, Bass, Gitar, Sax / Melodi, Strings / Brass, Drum, atau Semua instrumen** di menu Transkripsi Lagu.
 
-- Volume playback MIDI di piano roll default 200%, bisa diatur 50–250%.
-- Volume yang dipilih disimpan lokal, tanpa mengubah timing atau nada.
-- Ekspor MIDI kini mengikuti level velocity dari slider (default 110, bukan 85).
-- Menggunakan compressor audio yang sudah ada untuk membantu menahan lonjakan volume saat banyak not berbunyi bersamaan.
-- Meningkatkan volume tidak memperbaiki nada transkripsi yang salah. Mode AI Piano masih lebih sesuai untuk piano yang jernih daripada musik band penuh.
+## Apa yang benar-benar bisa dilakukan
 
-Upload semua file FULL ke root GitHub Pages, atau timpa `index.html`, `styles.css`, `app.js` dengan FIX SAJA. Lalu Ctrl+F5.
+- **MIDI multi-track:** memilih instrumen berdasarkan program General MIDI, channel, dan label track. Hasilnya langsung difilter di piano roll dan ekspor MIDI mengikuti jalur terpilih. Kualitas mengikuti MIDI sumber. MIDI tanpa penandaan instrumen dapat terklasifikasi keliru; pilih *Semua instrumen* jika tidak ada jalur yang ditemukan.
+- **Audio piano:** model Magenta Onsets & Frames tetap tersedia untuk rekaman piano relatif bersih. Memerlukan unduhan model saat pertama dipakai.
+- **Audio synth / bass / gitar / melodi:** mode deteksi perkiraan (FFT) dibatasi register/fokus, **bukan instrument source separation**. Jangan mengandalkan akurasi pada audio full band. Untuk lebih rapi, unggah audio stem yang sudah dipisah di luar aplikasi.
+- **Drum audio:** belum didukung. Drum tersedia hanya dari MIDI channel drum.
 
----
+Fitur lain tetap: capture audio tab, piano 88 tuts, Piano Roll Jatuh, volume MIDI, Circle of Fifths, Chord Journey, Cheat Sheet, Belajar Notasi.
 
-# CHORD ATLAS v7 — AI Piano Solo + Audio to MIDI
+## Pemasangan
 
-Versi ini mempertahankan seluruh menu v6: Piano Studio, Cheat Sheet, Circle of Fifths, Chord Journey, Belajar Notasi, tangkap audio tab, editor, dan piano roll 88 tuts.
+GitHub Pages: unggah seluruh isi ZIP FULL ke root repo. Alternatif: file FIX menggantikan `index.html`, `styles.css`, `app.js` di v9. Tekan `Ctrl+F5` setelah GitHub Pages selesai deploy.
 
-## Apa yang diperbaiki
-
-v6 mengandalkan FFT/harmonic salience yang sering menganggap harmonik bass atau drum sebagai not piano. **v7 menambahkan mode baru AI Piano Solo (Magenta Onsets & Frames)**, model terlatih untuk membaca permainan piano dua tangan, bukan sekadar puncak spektrum.
-
-- `AI Piano Solo` (default) — memerlukan internet hanya untuk memuat skrip TensorFlow.js/Magenta dan checkpoint ±30 MB pada penggunaan pertama. Memproses audio lokal di browser (bukan diunggah ke API). Untuk audio piano yang relatif bersih.
-- `Cepat: melodi sederhana` — FFT lama sebagai pembanding, bukan hasil profesional.
-- `Eksperimen: chord` — FFT lama sebagai pembanding, tidak direkomendasikan untuk musik band campuran.
-- Setelah `Selesai Rekam`, audio tidak otomatis dijadikan MIDI palsu. Pengguna memilih metode dan menekan **Analisis Audio → MIDI**.
-- Pengaturan lama tetap: piano roll jatuh, editor not, impor/ekspor MIDI, audio samplenya, 88 tuts tanpa geser, sidebar lipat.
-
-## Instalasi GitHub Pages
-
-Upload semua isi ZIP FULL ke root repository GitHub Pages, timpa file sebelumnya, kemudian refresh halaman (`Ctrl+F5`). Untuk FIX SAJA, timpa **index.html, app.js, styles.css**. Pastikan audio-bank.js versi v6 tetap ada.
-
-## Cara pakai
-
-1. Ambil audio memakai **Tangkap Audio Tab** dengan izin Chrome (pilih tab yang benar dan centang Bagikan audio tab), atau upload WAV/MP3/M4A.
-2. Klik **Selesai Rekam**. Saat audio diterima, pastikan pemutar audio bisa memainkannya.
-3. Pilih **AI Piano Solo** dan durasi analisis: 30, 60, atau seluruh rekaman (maks. 4 menit).
-4. Klik **Analisis Audio → MIDI**. Pertama kali online dan unduhan model ±30MB. Beri ruang RAM untuk browser.
-5. Setelah hasil muncul, cocokkan dengan audio, edit manual seperlunya, lalu klik **↓ MIDI**.
-
-## Batasan penting
-
-**AI Piano Solo bukan pemisah instrumen.** T-Square/Casiopea berisi bass, drum, gitar, saksofon/keyboard; model tetap bisa menghasilkan nada keliru dari campuran penuh. Untuk hasil lebih baik, masukkan audio keyboard/piano yang sudah dipisah (stem), atau MIDI asli. Pemisahan piano lewat Demucs 6-stem juga tidak selalu bersih (pengembangnya menyatakan stem piano belum bekerja bagus). Hasil tidak dijamin sama dengan lagu asli.
-
-GitHub Pages saja tidak bisa membaca audio YouTube iframe lintas-origin secara langsung; berbagi audio tab tetap memerlukan persetujuan browser.
-
-## Dasar teknis
-
-TensorFlow.js 1.7.4 + @magenta/music 1.23.1 dari jsDelivr (lazy-loaded), checkpoint `onsets_frames_uni_q2` resmi Magenta (~30 MB). Ketergantungan eksternal ini **tidak di-bundle** dalam ZIP agar halaman pertama tetap cepat dan paket ZIP kecil. Semua menu selain analisis AI tetap jalan offline. Fitur model AI membutuhkan koneksi internet dan dapat terpengaruh kebijakan CDN.
-
-Lisensi dan kredit sumber aplikasi tetap di berkas LICENSE dan audio/CREDITS.txt.
+**Catatan:** model transkripsi audio serbaguna yang dapat memisahkan setiap instrumen dari suara YouTube belum tersedia pada build statis ini. Jangan menganggap pilihan fokus instrumen sebagai hasil stem separation.

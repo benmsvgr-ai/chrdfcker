@@ -194,3 +194,17 @@ body.sidebar-collapsed .content{width:100%}
 .roll-controls .midi-volume-control input[type=range]{width:118px;max-width:22vw;accent-color:#67e3d1;cursor:pointer}
 .roll-controls .midi-volume-control strong{font-size:11px;color:#98fff0;font-variant-numeric:tabular-nums;min-width:38px;text-align:right}
 @media(max-width:670px){.roll-controls .midi-volume-control{width:100%;justify-content:space-between}.roll-controls .midi-volume-control input[type=range]{width:min(200px,45vw);max-width:unset}}
+
+/* v10 — pilihan instrumen, ringkas dan menyatu dengan form */
+.instrument-focus-panel{border:1px solid rgba(103,227,215,.23);border-radius:13px;padding:17px 18px;background:linear-gradient(115deg,rgba(22,52,72,.75),rgba(13,26,48,.75));margin:15px 0 13px}
+.instrument-focus-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:14px}
+.instrument-focus-head h3{font-size:17px;line-height:1.3;margin:4px 0 0;letter-spacing:-.02em}
+.focus-kicker{color:#78dbd5;font-weight:750;letter-spacing:.15em;font-size:10px}
+.instrument-status-pill{border:1px solid rgba(91,227,217,.32);color:#87f0e2;border-radius:7px;padding:5px 9px;font-size:10px;font-weight:750;letter-spacing:.1em}
+.instrument-focus-row{display:flex;align-items:center;gap:20px}
+.instrument-focus-row label{color:#a2b9cc;font-weight:700;letter-spacing:.08em;font-size:10px;min-width:128px}
+.instrument-focus-row select{flex:1;min-width:0;max-width:100%;background:#0c192b;border:1px solid #354a60;border-radius:8px;color:#e5f4ff;padding:10px 12px;font:600 13px inherit}
+.instrument-hint{font-size:12px;line-height:1.7;color:#bfd3e1;margin:13px 0 0}
+.instrument-truth{font-size:11px;line-height:1.65;margin:9px 0 0;color:#90a6ba}
+.instrument-source{font-size:11px;line-height:1.6;border-left:2px solid #4edbc8;padding:7px 10px;margin-top:12px;background:rgba(51,181,165,.06);color:#bcefe8}
+@media(max-width:700px){.instrument-focus-row{display:block}.instrument-focus-row label{display:block;margin-bottom:8px}.instrument-focus-row select{width:100%}.instrument-focus-panel{padding:14px}}

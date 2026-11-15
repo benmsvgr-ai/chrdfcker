@@ -387,27 +387,72 @@ function exportRollMidi(){
  const d=x=>[(x>>>24)&255,(x>>>16)&255,(x>>>8)&255,x&255];
  downloadFile('Chord_Atlas_Piano_Roll.mid',new Uint8Array([...Array.from('MThd').map(c=>c.charCodeAt(0)),...d(6),0,0,0,1,(ppq>>8)&255,ppq&255,...Array.from('MTrk').map(c=>c.charCodeAt(0)),...d(tr.length),...tr]),'audio/midi');toast('Piano roll tersimpan sebagai MIDI.');
 }
+// Impor MIDI mempertahankan identitas instrumen per track/channel.
 function readMidiNotes(arraybuffer){
- const v=new DataView(arraybuffer);let p=0;const byte=()=>v.getUint8(p++),u16=()=>{let a=v.getUint16(p);p+=2;return a},u32=()=>{let a=v.getUint32(p);p+=4;return a},str=n=>{let a='';for(let i=0;i<n;i++)a+=String.fromCharCode(byte());return a};
+ const v=new DataView(arraybuffer);let p=0;
+ const byte=()=>v.getUint8(p++),u16=()=>{let a=v.getUint16(p);p+=2;return a},u32=()=>{let a=v.getUint32(p);p+=4;return a};
+ const str=n=>{let a='';for(let i=0;i<n;i++)a+=String.fromCharCode(byte());return a};
  const vlq=()=>{let n=0,b=0;do{b=byte();n=(n<<7)|(b&127)}while((b&128)&&p<v.byteLength);return n};
- if(str(4)!=='MThd')throw Error('Bukan file MIDI.');const hsize=u32(),format=u16(),ntr=u16(),division=u16();p=8+hsize;
+ if(str(4)!=='MThd')throw Error('Bukan file MIDI.');
+ const hsize=u32(),format=u16(),ntr=u16(),division=u16();p=8+hsize;
  if(division&0x8000)throw Error('MIDI SMPTE belum didukung.');
  let events=[],tempos=[{tick:0,us:500000}];
  for(let tr=0;tr<ntr;tr++){
-  if(str(4)!=='MTrk')break;const size=u32(),limit=p+size;let tick=0,runStatus=0;const playing=new Map();
-  while(p<limit){tick+=vlq();let status=byte();if(status<0x80){p--;status=runStatus;}else if(status<0xf0)runStatus=status;
-   if(status===0xff){const kind=byte(),len=vlq();if(kind===0x51&&len===3){const us=(byte()<<16)|(byte()<<8)|byte();tempos.push({tick,us});}else p+=len;continue;}
+  if(str(4)!=='MTrk')break;
+  const size=u32(),limit=p+size;let tick=0,runStatus=0,trackName='Track '+(tr+1);
+  const playing=new Map(),programs=new Uint8Array(16);
+  const trackEvents=[];
+  while(p<limit){
+   tick+=vlq();let status=byte();
+   if(status<0x80){p--;status=runStatus;}else if(status<0xf0)runStatus=status;
+   if(status===0xff){
+    const kind=byte(),len=vlq(),metaStart=p;
+    if(kind===0x51&&len===3){const us=(byte()<<16)|(byte()<<8)|byte();tempos.push({tick,us});}
+    else if(kind===0x03&&len>0){const bytes=new Uint8Array(arraybuffer,metaStart,Math.min(len,150));trackName=new TextDecoder('utf-8').decode(bytes).replace(/[\u0000-\u001f]/g,' ').trim()||trackName;}
+    p=metaStart+len;continue;
+   }
    if(status===0xf0||status===0xf7){p+=vlq();continue;}
-   const type=status&0xf0,chan=status&0x0f;if(type===0x90||type===0x80){const midi=byte(),vel=byte(),key=chan+':'+midi;
-    if(type===0x90&&vel>0){playing.set(key,{tick,midi})}else if(playing.has(key)){const note=playing.get(key);events.push({...note,endTick:tick});playing.delete(key)}}
-   else if(type===0xc0||type===0xd0)p++;
+   const type=status&0xf0,chan=status&0x0f;
+   if(type===0x90||type===0x80){
+    const midi=byte(),vel=byte(),key=chan+':'+midi;
+    if(type===0x90&&vel>0){
+     if(playing.has(key)){const prev=playing.get(key);trackEvents.push({...prev,endTick:tick});}
+     playing.set(key,{tick,midi,channel:chan,program:programs[chan],track:tr,velocity:vel});
+    }else if(playing.has(key)){const note=playing.get(key);trackEvents.push({...note,endTick:tick});playing.delete(key)}
+   }else if(type===0xc0){programs[chan]=byte();}
+   else if(type===0xd0)p++;
    else if([0xa0,0xb0,0xe0].includes(type))p+=2;
    else throw Error('Event MIDI tidak dikenali.');
-  }p=limit;
+  }
+  for(const ev of trackEvents)ev.trackName=trackName;
+  events.push(...trackEvents);p=limit;
  }
- tempos.sort((a,b)=>a.tick-b.tick);const timeAt=tick=>{let at=0,old=0,rate=500000;for(const ev of tempos){if(ev.tick>tick)break;at+=(ev.tick-old)/division*rate/1000000;old=ev.tick;rate=ev.us}return at+(tick-old)/division*rate/1000000};
- return events.map(e=>({midi:e.midi,start:timeAt(e.tick),duration:Math.max(.08,timeAt(e.endTick)-timeAt(e.tick)),source:'analyzed'})).filter(e=>e.midi>=ROLL_LOW&&e.midi<=ROLL_HIGH).slice(0,2500);
+ tempos.sort((a,b)=>a.tick-b.tick);
+ const timeAt=tick=>{let at=0,old=0,rate=500000;for(const ev of tempos){if(ev.tick>tick)break;at+=(ev.tick-old)/division*rate/1000000;old=ev.tick;rate=ev.us}return at+(tick-old)/division*rate/1000000};
+ return events.map(e=>({midi:e.midi,start:timeAt(e.tick),duration:Math.max(.08,timeAt(e.endTick)-timeAt(e.tick)),source:'midi',instrument:midiInstrumentGroup(e.program,e.channel,e.trackName),trackName:e.trackName,track:e.track,program:e.program,channel:e.channel,velocity:e.velocity}))
+  .filter(e=>e.midi>=ROLL_LOW&&e.midi<=ROLL_HIGH).sort((a,b)=>a.start-b.start||a.midi-b.midi).slice(0,16000);
 }
+function midiInstrumentGroup(program,channel,trackName=''){
+ if(channel===9)return 'drums';
+ const name=trackName.toLowerCase();
+ // MIDI program (General MIDI) is prioritized; track name helps when a track has no explicit program change.
+ if(program===1)return 'piano';
+ if(program>=2&&program<=23)return 'keyboard';
+ if(program>=24&&program<=31)return 'guitar';
+ if(program>=32&&program<=39)return 'bass';
+ if(program>=40&&program<=55)return 'strings';
+ if(program>=56&&program<=79)return 'lead';
+ if(program>=80&&program<=103)return 'keyboard';
+ if(program>=104&&program<=111)return 'lead';
+ if(/synth|keyboard|keys|organ|epiano|e-piano|rhodes|electric piano|clav/i.test(name))return 'keyboard';
+ if(/bass/i.test(name))return 'bass';
+ if(/guitar|gtr/i.test(name))return 'guitar';
+ if(/sax|horn|trumpet|flute|lead|melody|ewi/i.test(name))return 'lead';
+ if(/string|brass|pad/i.test(name))return 'strings';
+ if(/drum|percussion/i.test(name))return 'drums';
+ return 'piano';
+}
+
 function openReference(){
  const raw=$('#source-link').value.trim(),target=$('#video-container');target.hidden=true;target.replaceChildren();
  if(!raw)return toast('Tempel link YouTube atau Instagram.');
@@ -434,13 +479,13 @@ function openReference(){
     target.appendChild(message);
   }
   target.appendChild(out);target.hidden=false;
-  $('#source-feedback').textContent='Video sudah dibuka. Klik Tangkap Audio Tab, lalu pilih tab ini pada dialog Chrome dan aktifkan Bagikan audio tab.';
+  $('#source-feedback').textContent='Putar video di atas. Klik Rekam Video Ini, izinkan Tab ini (This Tab) + Bagikan audio tab, lalu Selesai Rekam dan Analisis Audio → MIDI.';
  }else if(host==='instagram.com'||host==='instagr.am'){
   if(!/^\/(reel|p|tv)\//.test(url.pathname))return toast('Gunakan link post atau Reel Instagram.');
   const out=document.createElement('div');out.className='reference-actions instagram-reference';
   const a=document.createElement('a');a.className='reference-open';a.href=url.href;a.target='_blank';a.rel='noopener noreferrer';a.textContent='Buka video di Instagram ↗';out.appendChild(a);
   target.appendChild(out);target.hidden=false;
-  $('#source-feedback').textContent='Instagram sudah dibuka. Gunakan Tangkap Audio Tab untuk merekam suara tab dengan izin Chrome.';
+  $('#source-feedback').textContent='Instagram tidak bisa diputar langsung di panel ini. Buka Instagram lewat tautan, lalu rekam tab tersebut atau unggah file audio.';
  }else toast('Yang didukung: YouTube dan Instagram.');
 }
 // Capture via browser tab sharing permission. Never download audio by URL or read iframe contents.
@@ -455,9 +500,9 @@ async function startTabCapture(){
  }
  let stream;
  try{
-  stream=await navigator.mediaDevices.getDisplayMedia({video:{displaySurface:'browser'},audio:{suppressLocalAudioPlayback:false},selfBrowserSurface:'exclude',systemAudio:'exclude'});
- }catch(err){captureMessage(err.name==='NotAllowedError'?'Berbagi tab dibatalkan. Klik Tangkap Audio Tab lalu pilih tab video.':'Gagal membuka pemilih tab: '+(err.message||err.name));return;}
- if(!stream.getAudioTracks().length){stream.getTracks().forEach(t=>t.stop());captureMessage('Audio tidak terbagi. Pilih Chrome Tab (bukan Window/Entire Screen) dan CENTANG “Share tab audio / Bagikan audio tab”.');return;}
+  stream=await navigator.mediaDevices.getDisplayMedia({video:{displaySurface:'browser'},audio:{suppressLocalAudioPlayback:false},preferCurrentTab:true,selfBrowserSurface:'include',systemAudio:'exclude'});
+ }catch(err){captureMessage(err.name==='NotAllowedError'?'Izin perekaman dibatalkan. Klik Rekam Video Ini, pilih Tab ini / This Tab, dan aktifkan Bagikan audio tab.':'Gagal membuka pemilih tab: '+(err.message||err.name));return;}
+ if(!stream.getAudioTracks().length){stream.getTracks().forEach(t=>t.stop());captureMessage('Audio belum dibagikan. Pilih Tab ini / This Tab di Chrome, lalu aktifkan Bagikan audio tab (Share tab audio). Jangan pilih Seluruh Layar.');return;}
  try{
   const mime=['audio/webm;codecs=opus','audio/webm','audio/mp4'].find(t=>MediaRecorder.isTypeSupported(t));
   const audioStream=new MediaStream(stream.getAudioTracks());
@@ -473,7 +518,7 @@ async function startTabCapture(){
    if(blob.size<1500){captureMessage('Rekaman kosong. Pastikan tab video sedang diputar dan “Bagikan audio tab” aktif.');return;}
    try{
     if(rollState.objectURL)URL.revokeObjectURL(rollState.objectURL);
-    rollState.objectURL=URL.createObjectURL(blob);rollState.sourceBuffer=await blob.arrayBuffer();rollState.sourcePCM=null;
+    rollState.objectURL=URL.createObjectURL(blob);rollState.sourceBuffer=await blob.arrayBuffer();rollState.sourcePCM=null;rollState.midiAll=null;$('#midi-track-info').hidden=true;
     $('#audio-reference').src=rollState.objectURL;$('#analyze-audio').disabled=false;
     captureMessage('Rekaman berhasil ('+Math.round(blob.size/1024)+' KB). Pilih metode analisis di bawah lalu klik Analisis Audio → MIDI. Rekaman tidak diputar ulang, jadi tidak menggema.');
     $('#analysis-message').textContent='Rekaman diterima. Pilih AI Piano Solo untuk rekaman piano, atau mode cepat untuk melodi tunggal.';
@@ -481,7 +526,7 @@ async function startTabCapture(){
   },{once:true});
   stream.getVideoTracks().forEach(t=>t.addEventListener('ended',()=>finishTabCapture(),{once:true}));
   recorder.start(1000);captureUI(true);$('#analysis-progress').value=0;$('#capture-elapsed').textContent='00:00';
-  captureMessage('MEREKAM AUDIO TAB. Putar video di tab YouTube. Tidak ada audio yang dipantulkan kembali ke speaker. Klik Selesai Rekam, lalu Analisis Audio → MIDI.');
+  captureMessage('SEDANG MEREKAM TAB INI. Putar video YouTube di atas. Setelah bagian yang ingin dikulik selesai, klik Selesai Rekam → Analisis Audio → MIDI. Audio tidak diputar ulang agar tidak menggema.');
   captureState.timer=setInterval(()=>{
    if(!captureState.stream)return;
    const sec=(performance.now()-captureState.start)/1000;
@@ -565,24 +610,65 @@ async function runAiPianoAnalysis(msg,prog){
   .filter(n=>Number.isInteger(n.midi)&&n.midi>=ROLL_LOW&&n.midi<=ROLL_HIGH&&Number.isFinite(n.start)&&n.start>=0&&Number.isFinite(n.duration)&&n.duration>=.06)
   .sort((a,b)=>a.start-b.start||a.midi-b.midi).slice(0,8000);
  if(!events.length){status('AI Piano tidak mendeteksi nada yang cukup jelas. Coba piano solo atau impor MIDI.');prog.value=100;return;}
- stopRoll();rollState.notes=events;rollState.seconds=Math.max(16,duration+1);rollState.playhead=-2.8;
+ stopRoll();rollState.midiAll=null;$('#midi-track-info').hidden=true;rollState.notes=events;rollState.seconds=Math.max(16,duration+1);rollState.playhead=-2.8;
  renderRoll();prog.value=100;
- status('AI Piano: '+events.length+' nada · '+Math.round(duration)+' detik. Dengarkan hasilnya, edit jika perlu, lalu ekspor MIDI.');
+ status('AI Piano: '+events.length+' nada perkiraan · '+Math.round(duration)+' detik. Tidak otomatis terpisah dari instrumen lain. Periksa hasil sebelum ekspor MIDI.');
  document.querySelector('.roll-panel')?.scrollIntoView({behavior:'smooth',block:'start'});
 }
+const INSTRUMENTS={
+ piano:{label:'PIANO',lo:36,hi:96,method:'piano_ai',mode:'poly',desc:'Piano akustik. AI Piano cocok untuk piano solo/rekaman bersih. MIDI bisa difilter berdasarkan instrumen.'},
+ keyboard:{label:'KEYBOARD',lo:44,hi:96,method:'poly',mode:'poly',desc:'Keyboard / synth / organ. Dari MIDI bisa dipilih tepat menurut program instrumen. Dari audio campuran, hanya tebakan nada—bukan pemisahan synth.'},
+ bass:{label:'BASS',lo:28,hi:64,method:'melody',mode:'melody',desc:'Bass: fokus register rendah dan nada tunggal. Akurat dari track MIDI; audio band bisa terganggu kick drum.'},
+ guitar:{label:'GITAR',lo:40,hi:89,method:'poly',mode:'poly',desc:'Gitar: fokus register gitar. FFT perkiraan, bukan stem gitar. Untuk lagu penuh gunakan rekaman gitar terpisah.'},
+ lead:{label:'MELODI',lo:52,hi:96,method:'melody',mode:'melody',desc:'Sax / EWI / melodi: fokus nada tunggal. Akurat jika instrumennya terdengar sendiri; audio band tetap perkiraan.'},
+ strings:{label:'STRINGS',lo:45,hi:96,method:'poly',mode:'poly',desc:'Strings / brass: hasil audio masih perkiraan; MIDI multi-track dapat disaring berdasarkan kelompok instrumen.'},
+ drums:{label:'DRUMS',lo:35,hi:81,method:'none',mode:'none',desc:'Drum bukan nada piano. Saat ini hanya bisa dipilih dari jalur drum di MIDI (channel 10). Audio drum → MIDI membutuhkan model khusus.'},
+ all:{label:'SEMUA',lo:28,hi:108,method:'poly',mode:'poly',desc:'Semua instrumen. MIDI menampilkan semua jalur. Deteksi audio FFT untuk band penuh sangat eksperimental dan mudah salah.'}
+};
+function selectedInstrument(){return $('#instrument-focus')?.value||'piano'}
+function applyImportedMidiFocus({scroll=false}={}){
+ if(!rollState.midiAll)return;
+ const focus=selectedInstrument();let notes=focus==='all'?rollState.midiAll:rollState.midiAll.filter(n=>n.instrument===focus);
+ stopRoll();rollState.notes=notes.slice(0,8000);rollState.seconds=Math.min(600,Math.max(16,rollState.midiAll.reduce((mx,n)=>Math.max(mx,n.start+n.duration),0)+2));rollState.playhead=-2.8;renderRoll();
+ const label=INSTRUMENTS[focus]?.label||focus;
+ $('#analysis-message').textContent=`MIDI: ${rollState.notes.length} nada ${label.toLowerCase()} dari ${rollState.midiAll.length} nada. ${rollState.notes.length?'Pilih Putar untuk melihatnya.':'Tidak ada jalur instrumen ini. Coba Semua instrumen.'}`;
+ const box=$('#midi-track-info');
+ if(box){box.hidden=false;const groups={};for(const n of rollState.midiAll)groups[n.instrument]=(groups[n.instrument]||0)+1;
+  box.textContent='Jalur MIDI terdeteksi: '+Object.entries(groups).map(([k,v])=>`${INSTRUMENTS[k]?.label||k} ${v}`).join(' · ');}
+ if(scroll)document.querySelector('.roll-panel')?.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function updateInstrumentFocus({autoMode=false}={}){
+ const focus=selectedInstrument(),cfg=INSTRUMENTS[focus]||INSTRUMENTS.piano;
+ $('#instrument-hint').textContent=cfg.desc;
+ $('#instrument-mode-badge').textContent=cfg.label;
+ if(autoMode){$('#analysis-mode').value=cfg.method==='none'?'melody':cfg.method;}
+ const noAudio=focus==='drums';
+ $('#analyze-audio').disabled=noAudio||(!rollState.sourceBuffer&&!rollState.sourcePCM);
+ $('#analyze-audio').title=noAudio?'Pilih file MIDI untuk mengambil jalur drum. Deteksi audio drum belum tersedia.':'';
+ if(rollState.midiAll)applyImportedMidiFocus();
+ updateAnalysisModeHelp();
+}
 function updateAnalysisModeHelp(){
- const mode=$('#analysis-mode')?.value;
+ const mode=$('#analysis-mode')?.value,focus=selectedInstrument();
  const note=$('#ai-mode-notice');if(!note)return;
+ if(focus==='drums'){
+  note.dataset.fft='true';note.innerHTML='<strong>Drum dari MIDI saja.</strong> Rekaman drum belum bisa dikonversi akurat menggunakan mesin deteksi audio ini. Unggah file MIDI dengan track drum.';
+  $('#ai-limit').disabled=true;return;
+ }
  if(mode==='piano_ai'){
-  note.dataset.fft='false';note.innerHTML='<strong>AI Piano Solo</strong> — model Onsets & Frames untuk not piano dua tangan. Beban awal ±30 MB saat dipilih; paling cocok untuk rekaman piano saja, bukan band lengkap.';
+  note.dataset.fft='false';
+  note.innerHTML='<strong>AI Piano (Onsets &amp; Frames)</strong> — membaca nada seperti piano; bukan pemisah instrumen dari band. Untuk synth/keyboard, kualitasnya belum terjamin. Sebaiknya gunakan stem instrumen terpisah.';
   $('#ai-limit').disabled=false;
  }else{
-  note.dataset.fft='true';note.innerHTML='<strong>Deteksi Cepat (eksperimental)</strong> — FFT hanya memperkirakan frekuensi. Untuk lagu dengan bass, gitar, drum, dan banyak instrumen, hasilnya bisa salah parah. Jangan jadikan MIDI final.';
+  note.dataset.fft='true';
+  note.innerHTML='<strong>Deteksi audio perkiraan</strong> — mencari nada di rentang '+(INSTRUMENTS[focus]?.lo||36)+'–'+(INSTRUMENTS[focus]?.hi||96)+' (MIDI). Ini <b>bukan</b> pemisahan instrumen. Untuk track piano/keyboard yang akurat, impor MIDI multi-track atau audio stem terpisah.';
   $('#ai-limit').disabled=true;
  }
 }
+
 async function analyzeUploadedAudio(){
  const btn=$('#analyze-audio'),msg=$('#analysis-message'),prog=$('#analysis-progress');
+ if(selectedInstrument()==='drums')return toast('Deteksi drum dari audio belum tersedia. Impor MIDI track drum.');
  if(!rollState.sourceBuffer&&!rollState.sourcePCM)return toast('Pilih audio atau tangkap suara tab YouTube dahulu.');
  if($('#analysis-mode').value==='piano_ai'){
   btn.disabled=true;btn.textContent='Memproses dengan AI Piano…';prog.value=0;
@@ -601,13 +687,13 @@ async function analyzeUploadedAudio(){
    for(let i=0;i<count;i++){const j=Math.floor(i*step);let val=0;for(const arr of channels)val+=arr[j]||0;raw[i]=val/channels.length;}
   }
   msg.textContent='Memisahkan nada dari rekaman (melodi atau chord)…';
-  const workerCode="onmessage=e=>{\n try{\n const data=new Float32Array(e.data.buffer),mode=e.data.mode||'melody',rate=11025;\n const hop=512,N=2048,minMidi=36,maxMidi=96;\n const notesByFrame=[],total=Math.max(0,Math.floor((data.length-N)/hop));\n if(!total){postMessage({done:true,notes:[]});return;}\n const real=new Float32Array(N),imag=new Float32Array(N),power=new Float32Array(N/2);\n const rev=new Uint16Array(N);\n for(let i=0;i<N;i++){let x=i,r=0;for(let b=0;b<11;b++){r=(r<<1)|(x&1);x>>=1;}rev[i]=r;}\n // FFT iterative radix-2 + Hann window (browser local/offline)\n function spectrum(at){\n  let rms=0;\n  for(let i=0;i<N;i++){let v=data[at+i]||0;rms+=v*v;let w=.5-.5*Math.cos(2*Math.PI*i/(N-1)),j=rev[i];real[j]=v*w;imag[j]=0;}\n  for(let size=2;size<=N;size<<=1){let h=size>>1;\n   for(let from=0;from<N;from+=size)for(let j=0;j<h;j++){\n    const a=-2*Math.PI*j/size,wr=Math.cos(a),wi=Math.sin(a),id=from+j,other=id+h;\n    const tr=wr*real[other]-wi*imag[other],ti=wr*imag[other]+wi*real[other];\n    real[other]=real[id]-tr;imag[other]=imag[id]-ti;real[id]+=tr;imag[id]+=ti;\n   }\n  }\n  for(let i=0;i<power.length;i++)power[i]=Math.sqrt(real[i]*real[i]+imag[i]*imag[i]);\n  return Math.sqrt(rms/N);\n }\n function interp(bin){\n  if(bin<1||bin>=power.length-1)return 0;\n  const low=Math.floor(bin),frac=bin-low;\n  const a=Math.max(power[Math.max(1,low-1)],power[low],power[Math.min(power.length-1,low+1)]);\n  const b=Math.max(power[Math.max(1,low)],power[Math.min(power.length-1,low+1)],power[Math.min(power.length-1,low+2)]);\n  return a*(1-frac)+b*frac;\n }\n let maxAmp=0;for(let p=0;p<data.length;p+=101)maxAmp=Math.max(maxAmp,Math.abs(data[p]));\n const threshold=Math.max(.007,maxAmp*.023);\n for(let f=0;f<total;f++){\n  const rms=spectrum(f*hop);if(rms<threshold){notesByFrame.push([]);continue;}\n  const sal=[];\n  for(let m=minMidi;m<=maxMidi;m++){\n   const freq=440*Math.pow(2,(m-69)/12),bin=freq*N/rate;\n   let score=0;\n   for(let harm=1;harm<=Math.min(5,Math.floor(rate*.48/freq));harm++)score+=interp(bin*harm)/Math.pow(harm,1.12);\n   // favor the actual fundamental over a spurious octave\n   const fundamental=interp(bin);\n   score=score*.72+fundamental*.28;\n   sal.push({m,score});\n  }\n  sal.sort((a,b)=>b.score-a.score);\n  const best=sal[0]?.score||0;\n  if(best<.1){notesByFrame.push([]);continue;}\n  if(mode==='melody'){\n   let candidate=sal[0];\n   // a lightly weighted continuity prior avoids some octave jumps\n   const previous=notesByFrame.length?notesByFrame[notesByFrame.length-1][0]:null;\n   if(previous!==undefined&&previous!==null){const near=sal.find(s=>Math.abs(s.m-previous)<=2 && s.score>=best*.75);if(near)candidate=near;}\n   notesByFrame.push([candidate.m]);\n  }else{\n   // Experimental multi-note estimation. Avoid pure harmonic false positives by limiting to 4 notes.\n   const found=[],cutoff=best*.62;\n   for(const item of sal){\n    if(found.length>=4||item.score<cutoff)break;\n    if(found.some(n=>Math.abs(n-item.m)<=1))continue;\n    // octave harmonic collisions require extra prominence\n    if(found.some(n=>Math.abs(n-item.m)===12)&&item.score<best*.88)continue;\n    found.push(item.m);\n   }\n   notesByFrame.push(found);\n  }\n  if(f%65===0)postMessage({progress:Math.round(f/total*100)});\n }\n const count=new Map(),output=[],step=hop/rate;\n for(let i=0;i<notesByFrame.length;i++){\n  const list=new Set(notesByFrame[i]);\n  for(const [m,t] of count){if(!list.has(m)){if(i-t.from>=3)output.push({midi:m,start:t.from*step,duration:(i-t.from)*step,source:'analyzed'});count.delete(m)}}\n  for(const m of list)if(!count.has(m))count.set(m,{from:i});\n }\n for(const [m,t] of count)if(notesByFrame.length-t.from>=3)output.push({midi:m,start:t.from*step,duration:(notesByFrame.length-t.from)*step,source:'analyzed'});\n output.sort((a,b)=>a.start-b.start||a.midi-b.midi);\n // Merge brief neighboring notes of same pitch to remove fragmentation.\n const merged=[];\n for(const n of output){const last=merged.findLast(x=>x.midi===n.midi&&n.start-(x.start+x.duration)<.10&&n.start>=x.start);\n  if(last)last.duration=n.start+n.duration-last.start;else merged.push(n);\n }\n postMessage({done:true,notes:merged.slice(0,4000),duration:data.length/rate});\n }catch(err){postMessage({error:String(err?.message||err)})}\n};";
+  const workerCode="onmessage=e=>{\n try{\n const data=new Float32Array(e.data.buffer),mode=e.data.mode||'melody',rate=11025;\n const hop=512,N=e.data.lowMidi<=35?4096:2048,minMidi=e.data.lowMidi||36,maxMidi=e.data.highMidi||96;\n const notesByFrame=[],total=Math.max(0,Math.floor((data.length-N)/hop));\n if(!total){postMessage({done:true,notes:[]});return;}\n const real=new Float32Array(N),imag=new Float32Array(N),power=new Float32Array(N/2);\n const rev=new Uint16Array(N);\n for(let i=0;i<N;i++){let x=i,r=0;for(let b=0;b<Math.log2(N);b++){r=(r<<1)|(x&1);x>>=1;}rev[i]=r;}\n // FFT iterative radix-2 + Hann window (browser local/offline)\n function spectrum(at){\n  let rms=0;\n  for(let i=0;i<N;i++){let v=data[at+i]||0;rms+=v*v;let w=.5-.5*Math.cos(2*Math.PI*i/(N-1)),j=rev[i];real[j]=v*w;imag[j]=0;}\n  for(let size=2;size<=N;size<<=1){let h=size>>1;\n   for(let from=0;from<N;from+=size)for(let j=0;j<h;j++){\n    const a=-2*Math.PI*j/size,wr=Math.cos(a),wi=Math.sin(a),id=from+j,other=id+h;\n    const tr=wr*real[other]-wi*imag[other],ti=wr*imag[other]+wi*real[other];\n    real[other]=real[id]-tr;imag[other]=imag[id]-ti;real[id]+=tr;imag[id]+=ti;\n   }\n  }\n  for(let i=0;i<power.length;i++)power[i]=Math.sqrt(real[i]*real[i]+imag[i]*imag[i]);\n  return Math.sqrt(rms/N);\n }\n function interp(bin){\n  if(bin<1||bin>=power.length-1)return 0;\n  const low=Math.floor(bin),frac=bin-low;\n  const a=Math.max(power[Math.max(1,low-1)],power[low],power[Math.min(power.length-1,low+1)]);\n  const b=Math.max(power[Math.max(1,low)],power[Math.min(power.length-1,low+1)],power[Math.min(power.length-1,low+2)]);\n  return a*(1-frac)+b*frac;\n }\n let maxAmp=0;for(let p=0;p<data.length;p+=101)maxAmp=Math.max(maxAmp,Math.abs(data[p]));\n const threshold=Math.max(.007,maxAmp*.023);\n for(let f=0;f<total;f++){\n  const rms=spectrum(f*hop);if(rms<threshold){notesByFrame.push([]);continue;}\n  const sal=[];\n  for(let m=minMidi;m<=maxMidi;m++){\n   const freq=440*Math.pow(2,(m-69)/12),bin=freq*N/rate;\n   let score=0;\n   for(let harm=1;harm<=Math.min(5,Math.floor(rate*.48/freq));harm++)score+=interp(bin*harm)/Math.pow(harm,1.12);\n   // favor the actual fundamental over a spurious octave\n   const fundamental=interp(bin);\n   score=score*.72+fundamental*.28;\n   sal.push({m,score});\n  }\n  sal.sort((a,b)=>b.score-a.score);\n  const best=sal[0]?.score||0;\n  if(best<.1){notesByFrame.push([]);continue;}\n  if(mode==='melody'){\n   let candidate=sal[0];\n   // a lightly weighted continuity prior avoids some octave jumps\n   const previous=notesByFrame.length?notesByFrame[notesByFrame.length-1][0]:null;\n   if(previous!==undefined&&previous!==null){const near=sal.find(s=>Math.abs(s.m-previous)<=2 && s.score>=best*.75);if(near)candidate=near;}\n   notesByFrame.push([candidate.m]);\n  }else{\n   // Experimental multi-note estimation. Avoid pure harmonic false positives by limiting to 4 notes.\n   const found=[],cutoff=best*.66;\n   for(const item of sal){\n    if(found.length>=4||item.score<cutoff)break;\n    if(found.some(n=>Math.abs(n-item.m)<=1))continue;\n    // octave harmonic collisions require extra prominence\n    if(found.some(n=>Math.abs(n-item.m)===12)&&item.score<best*.88)continue;\n    found.push(item.m);\n   }\n   notesByFrame.push(found);\n  }\n  if(f%65===0)postMessage({progress:Math.round(f/total*100)});\n }\n const count=new Map(),output=[],step=hop/rate;\n for(let i=0;i<notesByFrame.length;i++){\n  const list=new Set(notesByFrame[i]);\n  for(const [m,t] of count){if(!list.has(m)){if(i-t.from>=3)output.push({midi:m,start:t.from*step,duration:(i-t.from)*step,source:'analyzed'});count.delete(m)}}\n  for(const m of list)if(!count.has(m))count.set(m,{from:i});\n }\n for(const [m,t] of count)if(notesByFrame.length-t.from>=3)output.push({midi:m,start:t.from*step,duration:(notesByFrame.length-t.from)*step,source:'analyzed'});\n output.sort((a,b)=>a.start-b.start||a.midi-b.midi);\n // Merge brief neighboring notes of same pitch to remove fragmentation.\n const merged=[];\n for(const n of output){const last=merged.findLast(x=>x.midi===n.midi&&n.start-(x.start+x.duration)<.10&&n.start>=x.start);\n  if(last)last.duration=n.start+n.duration-last.start;else merged.push(n);\n }\n postMessage({done:true,notes:merged.slice(0,4000),duration:data.length/rate});\n }catch(err){postMessage({error:String(err?.message||err)})}\n};"
   const objectURL=URL.createObjectURL(new Blob([workerCode],{type:'application/javascript'}));
   const worker=new Worker(objectURL);rollState.worker=worker;
-  const notes=await new Promise((resolve,reject)=>{worker.onmessage=e=>{if(e.data.error)reject(new Error(e.data.error));if(e.data.progress!==undefined){prog.value=e.data.progress;msg.textContent='Membaca nada... '+e.data.progress+'%'}if(e.data.done)resolve(e.data.notes)};worker.onerror=reject;worker.postMessage({buffer:raw.buffer,mode:$('#analysis-mode').value},[raw.buffer])});
+  const notes=await new Promise((resolve,reject)=>{worker.onmessage=e=>{if(e.data.error)reject(new Error(e.data.error));if(e.data.progress!==undefined){prog.value=e.data.progress;msg.textContent='Membaca nada... '+e.data.progress+'%'}if(e.data.done)resolve(e.data.notes)};worker.onerror=reject;worker.postMessage({buffer:raw.buffer,mode:$('#analysis-mode').value,lowMidi:(INSTRUMENTS[selectedInstrument()]||INSTRUMENTS.piano).lo,highMidi:(INSTRUMENTS[selectedInstrument()]||INSTRUMENTS.piano).hi},[raw.buffer])});
   worker.terminate();rollState.worker=null;URL.revokeObjectURL(objectURL);
-  stopRoll();rollState.notes=notes;rollState.seconds=Math.max(16,max);rollState.playhead=-2.8;renderRoll();prog.value=100;
-  msg.textContent=`Selesai: ${notes.length} nada terdeteksi. Klik ↓ MIDI untuk mengunduh. Periksa dan koreksi hasilnya sebelum latihan.`;document.querySelector('.roll-panel')?.scrollIntoView({behavior:'smooth',block:'start'});
+  stopRoll();rollState.midiAll=null;$('#midi-track-info').hidden=true;rollState.notes=notes;rollState.seconds=Math.max(16,max);rollState.playhead=-2.8;renderRoll();prog.value=100;
+  msg.textContent=`${INSTRUMENTS[selectedInstrument()]?.label}: ${notes.length} nada perkiraan terdeteksi (bukan isolasi instrumen). Periksa hasil sebelum ekspor MIDI.`;document.querySelector('.roll-panel')?.scrollIntoView({behavior:'smooth',block:'start'});
   if(!notes.length)toast('Tidak terdeteksi nada. Periksa rekamannya di pemutar audio, lalu pilih mode Melodi utama.');
  }catch(err){if(rollState.worker){rollState.worker.terminate();rollState.worker=null;}msg.textContent='Analisis gagal: '+(err.message||err);toast('Deteksi audio gagal. Coba file WAV/MP3 atau pilih mode Melodi utama.');}
  finally{btn.disabled=false;btn.textContent='♫ Analisis Audio → MIDI';}
@@ -617,11 +703,11 @@ function initTranscription(){
  const volumeInput=$('#roll-volume'),volumeLabel=$('#roll-volume-value');
  volumeInput.value=String(midiVolumePercent);volumeLabel.textContent=midiVolumePercent+'%';
  volumeInput.addEventListener('input',e=>{midiVolumePercent=Math.max(50,Math.min(250,Number(e.target.value)||200));volumeLabel.textContent=midiVolumePercent+'%';try{localStorage.setItem('chord-atlas-midi-volume',String(midiVolumePercent));}catch(_){/* private mode */}});
- renderRoll();updateAnalysisModeHelp();$('#analysis-mode').addEventListener('change',updateAnalysisModeHelp);$('#open-source').addEventListener('click',openReference);$('#capture-start').addEventListener('click',startTabCapture);$('#capture-stop').addEventListener('click',finishTabCapture);
+ renderRoll();updateInstrumentFocus({autoMode:true});$('#instrument-focus').addEventListener('change',()=>updateInstrumentFocus({autoMode:true}));$('#analysis-mode').addEventListener('change',updateAnalysisModeHelp);$('#open-source').addEventListener('click',openReference);$('#capture-start').addEventListener('click',startTabCapture);$('#capture-stop').addEventListener('click',finishTabCapture);
  $('#source-speed').addEventListener('change',e=>$('#audio-reference').playbackRate=Number(e.target.value));
- $('#source-audio').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;if(rollState.objectURL)URL.revokeObjectURL(rollState.objectURL);rollState.objectURL=URL.createObjectURL(file);rollState.sourceBuffer=await file.arrayBuffer();rollState.sourcePCM=null;rollState.filename=file.name;
+ $('#source-audio').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;if(rollState.objectURL)URL.revokeObjectURL(rollState.objectURL);rollState.objectURL=URL.createObjectURL(file);rollState.sourceBuffer=await file.arrayBuffer();rollState.sourcePCM=null;rollState.midiAll=null;$('#midi-track-info').hidden=true;rollState.filename=file.name;
   $('#audio-reference').src=rollState.objectURL;$('#analyze-audio').disabled=false;$('#analysis-message').textContent=file.name+' · siap dianalisis';$('#analysis-progress').value=0;});
- $('#source-midi').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{const notes=readMidiNotes(await file.arrayBuffer());stopRoll();rollState.notes=notes;rollState.seconds=Math.min(240,Math.max(16,notes.reduce((v,n)=>Math.max(v,n.start+n.duration),0)+2));rollState.playhead=-2.8;renderRoll();$('#analysis-message').textContent=file.name+' · '+notes.length+' nada diimpor';toast('MIDI berhasil dibuka sebagai piano roll.');document.querySelector('.roll-panel')?.scrollIntoView({behavior:'smooth',block:'start'});}catch(err){toast('File MIDI gagal dibaca: '+err.message)}});
+ $('#source-midi').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{const notes=readMidiNotes(await file.arrayBuffer());rollState.midiAll=notes;rollState.sourceBuffer=null;rollState.sourcePCM=null;applyImportedMidiFocus({scroll:true});toast('MIDI dibaca. Pilih instrumen untuk menyaring jalurnya.');}catch(err){toast('File MIDI gagal dibaca: '+err.message)}});
  $('#analyze-audio').addEventListener('click',analyzeUploadedAudio);
  $('#roll-play').addEventListener('click',playRoll);$('#roll-stop').addEventListener('click',()=>{stopRoll();rollState.playhead=-2.8;renderRoll()});
  $('#roll-demo').addEventListener('click',demoRoll);$('#roll-export').addEventListener('click',exportRollMidi);

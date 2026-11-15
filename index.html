@@ -8,9 +8,9 @@
 <meta content="Chord Atlas: piano sampel akustik, cheat sheet musik, circle of fifths, jalur chord, belajar notasi, serta piano roll lokal." name="description"/>
 <title>Chord Atlas — Explore music, your way</title>
 <link href="favicon.svg" rel="icon" type="image/svg+xml"/>
-<link href="styles.css?v=7.0.0" rel="stylesheet"/>
+<link href="styles.css?v=9.0.0" rel="stylesheet"/>
 <script defer="" src="audio-bank.js?v=7.0.0"></script>
-<script defer="" src="app.js?v=7.0.0"></script>
+<script defer="" src="app.js?v=9.0.0"></script>
 </head>
 <body>
 <div aria-hidden="true" class="backdrop"><div class="ambient ambient-a"></div><div class="ambient ambient-b"></div><div class="noise"></div></div>
@@ -26,7 +26,7 @@
 </nav>
 <div class="sidebar-label second">QUICK START</div>
 <div class="quick-card"><div class="quick-eyebrow"><span class="pulse-dot"></span> LATIHAN HARI INI</div><div class="quick-title">Dari I ke IV ke V</div><p>Coba progresi sederhana. Dengarkan, lalu kembangkan jalurnya.</p><button class="text-action" id="quick-start">Mulai latihan <span>↗</span></button></div>
-<div class="sidebar-bottom"><div class="online-indicator"><span></span> Suara piano offline • Tanpa API</div><div class="version">CHORD ATLAS <span>07 / AI PIANO SOLO</span></div></div>
+<div class="sidebar-bottom"><div class="online-indicator"><span></span> Suara piano offline • Tanpa API</div><div class="version">CHORD ATLAS <span>INSTRUMENT STUDIO</span></div></div>
 </aside>
 <div class="main-wrap">
 <header class="topbar">
@@ -52,24 +52,40 @@
 <article class="panel cheat-modes"><div class="section-heading"><h2>7 modes dan warna scale</h2></div><div class="mode-grid" id="cheat-modes"></div></article>
 </div>
 </section><section aria-label="Transkripsi Lagu dan Piano Roll" class="page" id="page-transcribe">
-<div class="page-caption"><div><div class="eyebrow tiny">TRANSCRIBE / EDIT / PRACTICE</div><h2>Transkripsi Lagu</h2><p>Tempel video, tangkap audio tab yang sedang diputar, lalu lihat hasilnya di piano roll.</p></div><span class="small-chip">LOCAL-FIRST</span></div>
+<div class="page-caption"><div><div class="eyebrow tiny">TRANSCRIBE / EDIT / PRACTICE</div><h2>Transkripsi Lagu</h2><p>Tempel video YouTube, putar di sini, rekam audio tab ini, lalu lihat hasilnya di piano roll.</p></div><span class="small-chip">LOCAL-FIRST</span></div>
 <div class="transcribe-grid">
 <article class="panel transcribe-input"><div class="section-heading"><div><div class="eyebrow tiny">01 / SUMBER LAGU</div><h2>Ambil referensi</h2></div></div>
 <label for="source-link">TAUTAN YOUTUBE / INSTAGRAM</label><div class="link-input-row"><input autocomplete="off" id="source-link" placeholder="https://www.youtube.com/watch?v=..." type="url"/><button class="outline-btn" id="open-source" type="button">Buka</button></div>
-<div class="video-container" hidden="" id="video-container"></div><p class="micro-note" id="source-feedback">Video adalah referensi. Untuk mendeteksi nadanya, gunakan Tangkap Audio Tab di bawah.</p>
+<div class="video-container" hidden="" id="video-container"></div><p class="micro-note" id="source-feedback">Untuk YouTube: tempel tautan, klik Buka, lalu putar video di panel ini. Rekam dengan izin Chrome lewat tombol di bawah.</p>
 <div class="tab-capture" id="tab-capture-panel">
-  <div class="capture-head"><span class="capture-eyebrow">BARU · LANGSUNG DARI TAB</span><strong>Ambil suara video untuk piano roll</strong></div>
-  <p class="capture-instructions">1. Buka video YouTube/Instagram di tab lain. &nbsp; 2. Klik <b>Tangkap Audio Tab</b>. &nbsp; 3. Pilih tab video dan nyalakan <b>Bagikan audio tab</b>. &nbsp; 4. Putar lagunya, lalu klik <b>Selesai Rekam</b>, lalu pilih metode deteksi.</p>
-  <div class="capture-actions"><button class="primary-btn" type="button" id="capture-start">◉ Tangkap Audio Tab</button><button class="outline-btn" type="button" id="capture-stop" disabled>■ Selesai Rekam</button><span id="capture-elapsed" class="capture-time">00:00</span></div>
+  <div class="capture-head"><span class="capture-eyebrow">TANPA PINDAH TAB</span><strong>Rekam suara video yang diputar di atas</strong></div>
+  <p class="capture-instructions">1. Tempel link YouTube dan klik <b>Buka</b>. &nbsp; 2. Klik <b>Rekam Video Ini</b>. &nbsp; 3. Di Chrome, pilih <b>Tab ini (This Tab)</b> dan aktifkan <b>Bagikan audio tab</b>. &nbsp; 4. Putar video di atas, lalu klik <b>Selesai Rekam</b> dan <b>Analisis Audio → MIDI</b>.</p>
+  <div class="capture-actions"><button class="primary-btn" type="button" id="capture-start">◉ Rekam Video Ini</button><button class="outline-btn" type="button" id="capture-stop" disabled>■ Selesai Rekam</button><span id="capture-elapsed" class="capture-time">00:00</span></div>
   <div class="capture-meter" aria-hidden="true"><span id="capture-meter-fill"></span></div>
-  <p class="capture-status" id="capture-status" role="status">Chrome/Edge desktop · GitHub Pages (HTTPS) · pilih tab video, bukan Seluruh Layar. Audio diproses di perangkatmu. Suara video tidak diputar ulang oleh aplikasi agar tidak menggema.</p>
+  <p class="capture-status" id="capture-status" role="status">Untuk YouTube cukup satu tab. Chrome akan minta izin: pilih Tab ini (This Tab) + Bagikan audio tab. Hanya audionya yang dianalisis; aplikasi tidak memutar ulang suara agar tidak menggema.</p>
 </div>
-<div class="upload-area"><label class="upload-button" for="source-audio"><span class="upload-symbol">♫</span><strong>Pilih file audio</strong><small>WAV, MP3, M4A · diproses di browser</small></label><input accept="audio/*,.wav,.mp3,.m4a" hidden="" id="source-audio" type="file"/>
-<label class="upload-button" for="source-midi"><span class="upload-symbol">▦</span><strong>Impor MIDI</strong><small>Hasil piano roll lebih akurat dari MIDI</small></label><input accept=".mid,.midi,audio/midi" hidden="" id="source-midi" type="file"/></div>
+<div class="upload-area"><label class="upload-button" for="source-audio"><span class="upload-symbol">♫</span><strong>Pilih file audio / stem</strong><small>WAV, MP3, M4A · bisa stem instrumen terpisah</small></label><input accept="audio/*,.wav,.mp3,.m4a" hidden="" id="source-audio" type="file"/>
+<label class="upload-button" for="source-midi"><span class="upload-symbol">▦</span><strong>Impor MIDI</strong><small>Pilih jalur piano / synth / bass / gitar dari MIDI</small></label><input accept=".mid,.midi,audio/midi" hidden="" id="source-midi" type="file"/></div>
 <div class="source-player"><audio controls="" id="audio-reference" preload="metadata"></audio><div class="player-speed"><label for="source-speed">Kecepatan audio</label><select id="source-speed"><option value="0.5">0.5×</option><option value="0.75">0.75×</option><option selected="" value="1">1×</option><option value="1.25">1.25×</option></select></div></div>
+<div class="instrument-focus-panel" id="instrument-panel">
+  <div class="instrument-focus-head"><div><span class="focus-kicker">PILIH YANG MAU DIKULIK</span><h3>Ambil instrumen</h3></div><span class="instrument-status-pill" id="instrument-mode-badge">PIANO</span></div>
+  <div class="instrument-focus-row"><label for="instrument-focus">INSTRUMEN TARGET</label><select id="instrument-focus" aria-label="Pilih instrumen untuk ditampilkan di piano roll">
+    <option value="piano" selected>Piano akustik</option>
+    <option value="keyboard">Keyboard / Synth / Organ</option>
+    <option value="bass">Bass</option>
+    <option value="guitar">Gitar</option>
+    <option value="lead">Sax / Melodi utama</option>
+    <option value="strings">Strings / Brass</option>
+    <option value="drums">Drum / Perkusi (dari MIDI)</option>
+    <option value="all">Semua instrumen</option>
+  </select></div>
+  <p class="instrument-hint" id="instrument-hint" aria-live="polite">Piano akustik: gunakan AI Piano jika rekamannya bersih. Untuk MIDI, nada piano bisa dipilih berdasarkan jalur instrumen.</p>
+  <div class="instrument-source" id="midi-track-info" hidden></div>
+  <p class="instrument-truth">Dari <b>MIDI multi-track</b>, instrumen bisa dipilih berdasarkan jalurnya. Dari <b>audio YouTube/full band</b>, pilihan ini hanya memfokuskan perkiraan nada—belum memisahkan suara asli. Untuk hasil lebih rapi, gunakan rekaman instrumen yang sudah dipisah (stem).</p>
+</div>
 <div class="analysis-choice"><label for="analysis-mode">JENIS ANALISIS</label><select id="analysis-mode"><option value="piano_ai" selected>AI Piano Solo (Magenta · lebih teliti)</option><option value="melody">Cepat: melodi sederhana (FFT)</option><option value="poly">Eksperimen: chord perkiraan (FFT)</option></select></div><div class="ai-mode-notice" id="ai-mode-notice"><strong>AI Piano Solo</strong> — model gratis, dijalankan di browser. Model ±30 MB diunduh saat dipakai pertama kali. Paling cocok untuk piano yang terdengar jelas, bukan lagu band lengkap.</div><div class="ai-range"><label for="ai-limit">PANJANG AUDIO YANG DIANALISIS</label><select id="ai-limit"><option value="30">30 detik pertama (uji cepat)</option><option value="60" selected>60 detik pertama</option><option value="240">Seluruh rekaman (maksimal 4 menit)</option></select></div><button class="primary-btn fill" disabled="" id="analyze-audio">♫ Analisis Audio → MIDI</button><div class="analysis-status"><progress id="analysis-progress" max="100" value="0"></progress><span id="analysis-message">Unggah audio atau rekam suara tab YouTube untuk mulai.</span></div>
 </article>
-<article class="panel transcribe-info"><div class="eyebrow tiny">02 / APA YANG BISA DIKULIK?</div><h2>Latihan pakai piano roll</h2><div class="transcribe-facts"><div><b>Deteksi nada</b><span>Perkiraan nada dari rekaman atau audio tab yang dibagikan</span></div><div><b>Edit manual</b><span>Klik grid untuk tambah nada; klik balok nada untuk hapus</span></div><div><b>Putar &amp; ekspor</b><span>Preview bunyi piano, atur tempo dan unduh hasil sebagai MIDI</span></div></div><p class="truth-note">Mode AI Piano memuat model sekitar 30 MB saat pertama dipakai, memerlukan internet, dan dapat menggunakan memori serta waktu proses yang lebih besar. Gunakan rekaman piano yang jelas untuk hasil terbaik. Fitur Tangkap Audio Tab memerlukan izin Chrome. Memasukkan link saja belum otomatis menyalin suara video. Analisis lokal paling cocok untuk melodi atau piano yang jelas; lagu campuran belum otomatis menghasilkan semua chord secara akurat. Untuk hasil tepat, gunakan MIDI.</p></article>
+<article class="panel transcribe-info"><div class="eyebrow tiny">02 / APA YANG BISA DIKULIK?</div><h2>Latihan pakai piano roll</h2><div class="transcribe-facts"><div><b>Deteksi nada</b><span>Pilih fokus instrumen. MIDI multi-track dapat disaring per instrumen; audio campuran tetap perkiraan.</span></div><div><b>Edit manual</b><span>Klik grid untuk tambah nada; klik balok nada untuk hapus</span></div><div><b>Putar &amp; ekspor</b><span>Preview bunyi piano, atur tempo dan unduh hasil sebagai MIDI</span></div></div><p class="truth-note">Pilihan instrumen dari audio campuran bukan isolasi suara. Mode AI Piano memuat model sekitar 30 MB saat pertama dipakai, memerlukan internet, dan dapat menggunakan memori serta waktu proses yang lebih besar. Gunakan rekaman piano yang jelas untuk hasil terbaik. Fitur Tangkap Audio Tab memerlukan izin Chrome. Memasukkan link saja belum otomatis menyalin suara video. Analisis lokal paling cocok untuk melodi atau piano yang jelas; lagu campuran belum otomatis menghasilkan semua chord secara akurat. Untuk hasil tepat, gunakan MIDI.</p></article>
 </div>
 <article class="panel roll-panel"><div class="section-heading"><div><div class="eyebrow tiny">03 / PIANO ROLL BERJALAN</div><h2>Piano Roll Jatuh</h2></div><div class="roll-toolbar"><button class="outline-btn small" id="roll-play">▶ Putar</button><button class="outline-btn small" id="roll-stop">■ Stop</button><button class="outline-btn small" id="roll-demo">Contoh</button><button class="outline-btn small" id="roll-export">↓ MIDI</button><button class="outline-btn small" id="roll-clear">Hapus</button></div></div>
 <div class="roll-controls"><label>BPM <input id="roll-bpm" max="240" min="40" type="number" value="110"/></label><label>Zoom <input id="roll-zoom" max="150" min="45" type="range" value="75"/></label><label class="midi-volume-control" for="roll-volume"><span>♫ Volume MIDI</span><input id="roll-volume" type="range" min="50" max="250" step="10" value="200" aria-label="Volume MIDI piano roll"/><strong id="roll-volume-value" aria-live="polite">200%</strong></label><span id="roll-info">0 nada · klik grid untuk mulai</span></div>
