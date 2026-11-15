@@ -1,31 +1,42 @@
-# CHORD ATLAS v4 — Falling Piano Roll
+# CHORD ATLAS v5 — Full 88-Key Piano + Audio Tab Capture
 
-Web aplikasi musik untuk GitHub Pages, HTML/CSS/JavaScript tanpa backend atau API berbayar.
+Aplikasi musik interaktif berbasis HTML/CSS/JavaScript, gratis, dapat dipasang di GitHub Pages tanpa backend dan tanpa API berbayar.
 
-## Perbaikan v4
+## Yang baru
 
-- Piano utama **normal saat tidak dimainkan**. Tidak ada tombol yang tampak ditekan saat diam.
-- Tekan **Lihat posisi chord** jika ingin menampilkan penanda biru/oranye untuk LH/RH. Ini panduan opsional, bukan tanda nada sedang berbunyi.
-- Menu **Transkripsi Lagu** menampilkan *Piano Roll Jatuh*: balok bergerak dari atas ke keyboard dan tuts menyala saat nada mencapai garis main.
-- Rentang visual C2–C6, termasuk nada bass tangan kiri, sampai 49 tuts.
-- Mode contoh melodi dua tangan, pause/lanjutkan/stop, kecepatan 0.5x hingga 1.5x, seek, serta editor piano roll lama yang dapat dibuka bila diperlukan.
-- Impor MIDI, deteksi melodi dari audio unggahan, dan ekspor MIDI tetap ada.
-- Suara tetap dari sampel Grand Piano offline yang dipaketkan.
+- **88 tuts standar A0–C8** di piano utama dan piano roll ala Synthesia. Masing-masing terdiri dari 52 tuts putih dan 36 tuts hitam.
+- Tiga tombol navigasi **Bass / Tengah / Treble**. Area piano dapat digeser dengan mouse, trackpad, atau jari. Area awal menampilkan oktaf tengah.
+- Seluruh rentang piano roll dan editor manual diperpanjang ke A0–C8, termasuk impor MIDI nada rendah dan tinggi.
+- **Tangkap Audio Tab** untuk menganalisis suara dari tab video YouTube/Instagram dengan izin pengguna di Chrome/Edge desktop. Rekaman disimpan sementara di browser dan langsung dianalisis jadi *perkiraan nada melodi*.
+- Warna tuts menunjukkan bunyi saat dimainkan, bukan status permanen. Penanda chord kiri/kanan tetap opsional lewat "Lihat posisi chord".
+- Menu lama: Piano Studio, Cheat Sheet, Circle of Fifths, Chord Journey, Belajar Notasi, transkripsi, impor/ekspor MIDI tetap dipertahankan.
 
-## Menjalankan
+## Pasang ke GitHub Pages
 
-**Pilihan paling gampang:** buka ZIP `CHORD_ATLAS_v4_1_FILE.zip`, ekstrak, lalu klik dua kali `index.html` di Chrome/Edge. Semua kode dan suara piano sudah tertanam di satu file.
+1. Ekstrak ZIP FULL.
+2. Unggah **isi foldernya**, bukan ZIP-nya, ke root repository GitHub (`index.html`, `styles.css`, `app.js`, `audio-bank.js`, `favicon.svg`, folder `audio`, dan file lisensi).
+3. Aktifkan Settings → Pages → Deploy from branch `main`, folder `/ (root)`.
+4. Setelah terbit, refresh situs dengan **Ctrl+F5** supaya file JavaScript/CSS lama tidak tersimpan di cache.
 
-**Untuk GitHub Pages:** ekstrak `CHORD_ATLAS_v4_FULL_GITHUB.zip`, unggah seluruh isi ke root repository (`index.html`, `styles.css`, `app.js`, `audio-bank.js`, dll.). Di Settings → Pages pilih deploy dari branch `main` / root.
+Untuk mengganti versi v4 yang sudah terpasang dan masih memiliki `audio-bank.js`, gunakan ZIP `FIX_SAJA` dan **timpa tiga file** `index.html`, `styles.css`, `app.js`.
 
-**Perbaikan saja:** dari ZIP `CHORD_ATLAS_v4_FIX_SAJA.zip`, timpa `index.html`, `styles.css`, `app.js`. `audio-bank.js` v3 yang lama tetap dipakai tanpa perubahan.
+Untuk mencoba **offline**, ekstrak ZIP `SATU_FILE` lalu buka `index.html` di Chrome/Edge. Audio piano tetap tersedia. Fitur menangkap audio tab paling andal jika aplikasi dibuka melalui **GitHub Pages (HTTPS)**.
 
-## Mencoba piano roll
+## Cara memakai Tangkap Audio Tab
 
-Buka **Transkripsi Lagu** → **Contoh** → **Putar**. Nada akan turun mengikuti waktu dan berbunyi ketika menyentuh tuts. Coba impor `.mid` untuk menampilkan lagu sendiri, atau unggah rekaman sendiri untuk perkiraan melodi tunggal.
+1. Buka **Transkripsi Lagu** di CHORD ATLAS.
+2. Buka video YouTube/Instagram di tab Chrome/Edge lain.
+3. Di aplikasi, klik **Tangkap Audio Tab**.
+4. Pada dialog browser, pilih **Chrome Tab** (bukan Entire Screen), pilih tab video, lalu aktifkan **Share tab audio / Bagikan audio tab**.
+5. Putar video dan biarkan audio berjalan. Kembali ke aplikasi, klik **Selesai & Deteksi**. Maksimal 5 menit per rekaman.
+6. Nada hasil analisis dimuat ke Piano Roll Jatuh; tekan **Putar**. Perbaiki lewat Editor nada, dan ekspor ke MIDI jika perlu.
 
-Untuk koreksi manual, klik **Editor nada**. Chord dan melodi dengan banyak nada yang sudah ada di file MIDI ditampilkan bersama, tetapi algoritme analisis audio lokal **bukan** pemisah instrumen multi-track. Link YouTube/Instagram hanya untuk referensi tontonan: tidak otomatis disedot menjadi file audio/piano roll.
+**Batasan:** link YouTube/Instagram tidak otomatis memberikan akses ke audio video. Tidak ada pengunduhan/pengambilan tersembunyi. Fitur Tab Capture meminta persetujuan pengguna. Algoritme deteksi nada lokal memperkirakan melodi dominan, **bukan** memisahkan seluruh instrumen atau menghasilkan chord yang selalu akurat. Gunakan MIDI untuk hasil polifonik lebih akurat. Rekam dan olah hanya materi yang boleh Anda gunakan.
 
-## Audio
+## Mengetes piano
 
-Audio piano disimpan sebagai sampel dan tetap bisa dimainkan offline. Kualitas/respons dipengaruhi browser dan pengaturan suara perangkat. Jika browser membatasi audio awal, klik **Tes suara** sekali.
+Klik **Tes suara**. Jika belum berbunyi, pastikan browser mengizinkan suara dan volume perangkat aktif. Sampel suara grand piano disimpan lokal dalam `audio-bank.js`, tanpa permintaan ke server audio.
+
+## Lisensi audio
+
+Bank sampel piano berasal dari TimGM6mb SoundFont, **GPL-2.0-only**. Lihat `audio/CREDITS.txt` dan `LICENSE`. Redistribusi bank sampel harus mempertahankan ketentuan lisensi tersebut. Paket ini menyertakan kredit dan teks lisensinya.
