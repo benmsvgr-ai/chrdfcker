@@ -1,34 +1,51 @@
-# CHORD ATLAS v6 — Audio to MIDI + Fixed 88 Keys
+# CHORD ATLAS v8 — Volume MIDI diperbesar
 
-## Update di GitHub Pages
+Tambahan di atas seluruh fitur v7:
 
-Upload file dan folder dari ZIP FULL ke root repository (tempat `index.html`), menggantikan versi sebelumnya. `styles.css?v=6.0.1` dan `app.js?v=6.0.1` memakai parameter versi agar browser tidak menampilkan cache lama. Jika memakai ZIP FIX SAJA, timpa `index.html`, `styles.css`, `app.js` (file `audio-bank.js` versi v5 tetap dipakai).
+- Volume playback MIDI di piano roll default 200%, bisa diatur 50–250%.
+- Volume yang dipilih disimpan lokal, tanpa mengubah timing atau nada.
+- Ekspor MIDI kini mengikuti level velocity dari slider (default 110, bukan 85).
+- Menggunakan compressor audio yang sudah ada untuk membantu menahan lonjakan volume saat banyak not berbunyi bersamaan.
+- Meningkatkan volume tidak memperbaiki nada transkripsi yang salah. Mode AI Piano masih lebih sesuai untuk piano yang jernih daripada musik band penuh.
 
-## Cara tangkap audio tab YouTube / Instagram
+Upload semua file FULL ke root GitHub Pages, atau timpa `index.html`, `styles.css`, `app.js` dengan FIX SAJA. Lalu Ctrl+F5.
 
-1. Buka CHORD ATLAS melalui GitHub Pages (alamat `https://...`), lalu buka video dalam tab Chrome lain.
-2. Menu **Transkripsi Lagu** → **Tangkap Audio Tab**.
-3. Pada dialog Chrome pilih **Chrome Tab**, pilih tab YouTube/Instagram dan aktifkan **Share tab audio / Bagikan audio tab**. Jangan pilih **Entire Screen / Seluruh Layar**.
-4. Putar video; selesai merekam klik **Selesai & Deteksi**. Audio ditangkap hanya setelah izin diberikan.
-5. Pilih **Melodi utama** atau **Piano & chord (perkiraan beberapa nada)**; lalu tekan **Deteksi Audio → MIDI** bila ingin memproses ulang.
-6. Hasilnya masuk ke **Piano Roll Jatuh**. Tekan **↓ MIDI** untuk mengunduh, atau **Editor nada** untuk memperbaiki nada.
+---
 
-Aplikasi tidak mendownload audio dari link YouTube/Instagram secara otomatis. Yang dibaca adalah audio tab yang dibagikan pengguna dengan izin browser. Pengambilan audio langsung dari iframe YouTube/Instagram dibatasi browser/platform.
+# CHORD ATLAS v7 — AI Piano Solo + Audio to MIDI
 
-## Perbaikan v6
+Versi ini mempertahankan seluruh menu v6: Piano Studio, Cheat Sheet, Circle of Fifths, Chord Journey, Belajar Notasi, tangkap audio tab, editor, dan piano roll 88 tuts.
 
-- Merekam audio Chrome Tab dengan MediaRecorder tanpa jalur monitor yang memutar audio dua kali/bergema.
-- Menampilkan pesan jika tab tidak memiliki audio track. Rekaman audio diteruskan ke deteksi nada lalu dapat diekspor menjadi .mid.
-- Dua metode deteksi on-device: melodi utama, serta estimasi beberapa nada simultan (eksperimental).
-- Piano dan piano roll 88 tuts A0–C8 **mengisi lebar panel** tanpa scroll horizontal.
-- Sidebar bisa dilipat untuk memenuhi layar dan pilihan disimpan di browser.
-- Tampilan transkripsi menggunakan panel selebar konten, bukan dua kolom dengan ruang kosong.
-- Tidak memerlukan backend, API berbayar, atau layanan eksternal untuk analisis audio. Sampel audio grand piano terintegrasi melalui `audio-bank.js`.
+## Apa yang diperbaiki
+
+v6 mengandalkan FFT/harmonic salience yang sering menganggap harmonik bass atau drum sebagai not piano. **v7 menambahkan mode baru AI Piano Solo (Magenta Onsets & Frames)**, model terlatih untuk membaca permainan piano dua tangan, bukan sekadar puncak spektrum.
+
+- `AI Piano Solo` (default) — memerlukan internet hanya untuk memuat skrip TensorFlow.js/Magenta dan checkpoint ±30 MB pada penggunaan pertama. Memproses audio lokal di browser (bukan diunggah ke API). Untuk audio piano yang relatif bersih.
+- `Cepat: melodi sederhana` — FFT lama sebagai pembanding, bukan hasil profesional.
+- `Eksperimen: chord` — FFT lama sebagai pembanding, tidak direkomendasikan untuk musik band campuran.
+- Setelah `Selesai Rekam`, audio tidak otomatis dijadikan MIDI palsu. Pengguna memilih metode dan menekan **Analisis Audio → MIDI**.
+- Pengaturan lama tetap: piano roll jatuh, editor not, impor/ekspor MIDI, audio samplenya, 88 tuts tanpa geser, sidebar lipat.
+
+## Instalasi GitHub Pages
+
+Upload semua isi ZIP FULL ke root repository GitHub Pages, timpa file sebelumnya, kemudian refresh halaman (`Ctrl+F5`). Untuk FIX SAJA, timpa **index.html, app.js, styles.css**. Pastikan audio-bank.js versi v6 tetap ada.
+
+## Cara pakai
+
+1. Ambil audio memakai **Tangkap Audio Tab** dengan izin Chrome (pilih tab yang benar dan centang Bagikan audio tab), atau upload WAV/MP3/M4A.
+2. Klik **Selesai Rekam**. Saat audio diterima, pastikan pemutar audio bisa memainkannya.
+3. Pilih **AI Piano Solo** dan durasi analisis: 30, 60, atau seluruh rekaman (maks. 4 menit).
+4. Klik **Analisis Audio → MIDI**. Pertama kali online dan unduhan model ±30MB. Beri ruang RAM untuk browser.
+5. Setelah hasil muncul, cocokkan dengan audio, edit manual seperlunya, lalu klik **↓ MIDI**.
 
 ## Batasan penting
 
-Analisis otomatis sederhana ini tidak setara model pemisahan instrumen. Untuk piano solo dan melodi yang jelas hasilnya lebih baik. Lagu fusion dengan gitar, bass, sax, drum, dan instrumen tumpang tindih bisa menghasilkan nada salah, nada hilang, atau chord tidak lengkap. MIDI adalah *hasil perkiraan* dan bisa disunting. Tanpa pemisahan instrumen/ML yang lebih kuat, tidak ada jaminan transkripsi sempurna.
+**AI Piano Solo bukan pemisah instrumen.** T-Square/Casiopea berisi bass, drum, gitar, saksofon/keyboard; model tetap bisa menghasilkan nada keliru dari campuran penuh. Untuk hasil lebih baik, masukkan audio keyboard/piano yang sudah dipisah (stem), atau MIDI asli. Pemisahan piano lewat Demucs 6-stem juga tidak selalu bersih (pengembangnya menyatakan stem piano belum bekerja bagus). Hasil tidak dijamin sama dengan lagu asli.
 
-Pengujian otomatis: audio uji A4 440 Hz dan C5 523 Hz berhasil terbaca, file MIDI dapat diunduh, simulasi MediaRecorder audio tab berhasil, tuts utama dan piano roll 88 buah masing-masing, sidebar collapse, tidak ada JS page errors. Streaming langsung dari YouTube sebenarnya tetap harus dites di Chrome pengguna karena browser meminta pilihan tab secara manual.
+GitHub Pages saja tidak bisa membaca audio YouTube iframe lintas-origin secara langsung; berbagi audio tab tetap memerlukan persetujuan browser.
 
-Licensing: see LICENSE and audio/CREDITS.txt for audio attribution. All code and samples remain subject to respective source licenses.
+## Dasar teknis
+
+TensorFlow.js 1.7.4 + @magenta/music 1.23.1 dari jsDelivr (lazy-loaded), checkpoint `onsets_frames_uni_q2` resmi Magenta (~30 MB). Ketergantungan eksternal ini **tidak di-bundle** dalam ZIP agar halaman pertama tetap cepat dan paket ZIP kecil. Semua menu selain analisis AI tetap jalan offline. Fitur model AI membutuhkan koneksi internet dan dapat terpengaruh kebijakan CDN.
+
+Lisensi dan kredit sumber aplikasi tetap di berkas LICENSE dan audio/CREDITS.txt.

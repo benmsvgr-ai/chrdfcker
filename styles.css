@@ -183,3 +183,14 @@ body.sidebar-collapsed .content{width:100%}
 @media(min-width:671px){body.sidebar-collapsed .sidebar{transform:none!important}}
 @media(max-width:1050px) and (min-width:671px){body:not(.sidebar-collapsed) .sidebar{flex-basis:215px;width:215px;padding:20px 12px}body:not(.sidebar-collapsed) .sidebar .brand>div:last-child,body:not(.sidebar-collapsed) .sidebar .sidebar-label,body:not(.sidebar-collapsed) .sidebar .quick-card,body:not(.sidebar-collapsed) .sidebar .sidebar-bottom,body:not(.sidebar-collapsed) .sidebar .nav-link span:not(.nav-ico){display:initial}}
 @media(max-width:670px){.sidebar-toggle{display:none}.transcribe-grid{grid-template-columns:1fr}.content{padding:10px 8px 35px}.roll-panel{padding:10px}.fall-keys{height:88px}.piano-inner .white-key{font-size:0!important}.piano-inner .black-key{font-size:0!important}}
+
+/* v7 — Mode AI piano. Dimuat hanya saat dipakai, tidak menambah berat saat startup. */
+.ai-mode-notice{margin:12px 0;padding:12px 14px;border-left:3px solid #69dcd0;background:rgba(64,177,167,.08);color:#b8ccd9;font-size:12px;line-height:1.6;border-radius:0 7px 7px 0}
+.ai-mode-notice strong{color:#9ae9e0}.ai-range{display:flex;gap:9px;align-items:center;justify-content:space-between;margin-bottom:12px}.ai-range label{color:#93a5bd;font-size:10px;letter-spacing:.075em;font-weight:700}.ai-range select{max-width:260px;min-width:155px}.ai-mode-notice[data-fft="true"]{border-left-color:#e4a74f;background:rgba(228,167,79,.08)}
+@media(max-width:650px){.ai-range{flex-direction:column;align-items:stretch}.ai-range select{width:100%;max-width:none}}
+
+/* v8 MIDI loudness — compact, always available with the piano roll. */
+.roll-controls .midi-volume-control{display:flex;gap:8px;align-items:center;color:#b2e7e0;font-size:11px;font-weight:700;white-space:nowrap;border:1px solid rgba(89,225,208,.22);background:rgba(16,56,64,.45);padding:6px 9px;border-radius:9px}
+.roll-controls .midi-volume-control input[type=range]{width:118px;max-width:22vw;accent-color:#67e3d1;cursor:pointer}
+.roll-controls .midi-volume-control strong{font-size:11px;color:#98fff0;font-variant-numeric:tabular-nums;min-width:38px;text-align:right}
+@media(max-width:670px){.roll-controls .midi-volume-control{width:100%;justify-content:space-between}.roll-controls .midi-volume-control input[type=range]{width:min(200px,45vw);max-width:unset}}

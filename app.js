@@ -93,7 +93,7 @@ function sampledTone(midi,when,duration=.9,volume=.3){
  const sample=pianoSamples.get(base);if(!sample)return;
  const src=ctx.createBufferSource();src.buffer=sample;src.playbackRate.value=Math.pow(2,(midi-base)/12);
  const g=ctx.createGain(),t=Math.max(ctx.currentTime+.002,when||ctx.currentTime+.008);
- const velocity=Math.max(.045,Math.min(.6,volume))*.82;
+ const velocity=Math.max(.045,Math.min(.78,volume))*.82;
  g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(velocity,t+.009);
  g.gain.setValueAtTime(velocity,t+Math.min(.23,Math.max(.1,duration*.26)));
  const end=t+Math.min(duration,Math.max(.25,sample.duration/src.playbackRate.value-.04));
@@ -235,6 +235,9 @@ function renderCheatSheet(){
 // TRANSKRIPSI LOKAL: MIDI import, single-pitch estimate, note editor.
 // Audio tab hanya melalui getDisplayMedia dengan persetujuan pengguna; tidak membaca iframe lintas-origin.
 // ------------------------------------------------------------
+let midiVolumePercent=200;
+function midiPreviewGain(){return midiVolumePercent/100;}
+function midiExportVelocity(){return Math.max(1,Math.min(127,Math.round(60+25*midiPreviewGain())));}
 const rollState={notes:[],seconds:16,playing:false,timers:[],raf:0,playStarted:0,playBase:0,playhead:-2.8,rate:1,objectURL:null,sourceBuffer:null,filename:'',worker:null,sourcePCM:null,sourceRate:11025};
 const ROLL_H=20,ROLL_LOW=21,ROLL_HIGH=108;
 let FALL_W=26,FALL_B=17,FALL_WIDTH=1352;const FALL_H=460,FALL_LOW=21,FALL_HIGH=108,FALL_LOOKAHEAD=3.15;
@@ -348,7 +351,7 @@ function playRoll(){
   if(noteEnd<=begin || n.start>end)continue;
   const startDelay=Math.max(0,(n.start-begin)/rate)*1000;
   const remaining=Math.min(n.duration,noteEnd-Math.max(begin,n.start));
-  const t=setTimeout(()=>{if(!rollState.playing)return;tone(n.midi+state.transpose,null,Math.max(.12,remaining/rate),.28);flashKey(n.midi);},startDelay);
+  const t=setTimeout(()=>{if(!rollState.playing)return;tone(n.midi+state.transpose,null,Math.max(.12,remaining/rate),.28*midiPreviewGain());flashKey(n.midi);},startDelay);
   rollState.timers.push(t);
  }
  const frame=()=>{
@@ -378,7 +381,7 @@ function demoRoll(){
 function exportRollMidi(){
  if(!rollState.notes.length){toast('Belum ada nada untuk diekspor.');return}
  const bpm=Math.max(40,Math.min(240,Number($('#roll-bpm').value)||110)),ppq=480,mpq=Math.round(60000000/bpm),ticksPerSecond=ppq*bpm/60,events=[{t:0,priority:0,bytes:[0xFF,0x51,3,(mpq>>16)&255,(mpq>>8)&255,mpq&255]},{t:0,priority:0,bytes:[0xC0,0]}];
- for(const n of rollState.notes){const on=Math.round(n.start*ticksPerSecond),off=Math.round((n.start+n.duration)*ticksPerSecond);events.push({t:on,priority:1,bytes:[0x90,n.midi,85]},{t:off,priority:0,bytes:[0x80,n.midi,0]})}
+ for(const n of rollState.notes){const on=Math.round(n.start*ticksPerSecond),off=Math.round((n.start+n.duration)*ticksPerSecond);events.push({t:on,priority:1,bytes:[0x90,n.midi,midiExportVelocity()]},{t:off,priority:0,bytes:[0x80,n.midi,0]})}
  events.sort((a,b)=>a.t-b.t||a.priority-b.priority);let tr=[],t=0;
  for(const e of events){tr.push(...midiVar(e.t-t),...e.bytes);t=e.t}tr.push(0,0xff,0x2f,0);
  const d=x=>[(x>>>24)&255,(x>>>16)&255,(x>>>8)&255,x&255];
@@ -472,13 +475,13 @@ async function startTabCapture(){
     if(rollState.objectURL)URL.revokeObjectURL(rollState.objectURL);
     rollState.objectURL=URL.createObjectURL(blob);rollState.sourceBuffer=await blob.arrayBuffer();rollState.sourcePCM=null;
     $('#audio-reference').src=rollState.objectURL;$('#analyze-audio').disabled=false;
-    captureMessage('Rekaman audio diterima ('+Math.round(blob.size/1024)+' KB). Memeriksa dan mengubah suara menjadi MIDI…');
-    await analyzeUploadedAudio();
+    captureMessage('Rekaman berhasil ('+Math.round(blob.size/1024)+' KB). Pilih metode analisis di bawah lalu klik Analisis Audio → MIDI. Rekaman tidak diputar ulang, jadi tidak menggema.');
+    $('#analysis-message').textContent='Rekaman diterima. Pilih AI Piano Solo untuk rekaman piano, atau mode cepat untuk melodi tunggal.';
    }catch(err){captureMessage('Audio terekam tetapi belum bisa dibaca: '+err.message)}
   },{once:true});
   stream.getVideoTracks().forEach(t=>t.addEventListener('ended',()=>finishTabCapture(),{once:true}));
   recorder.start(1000);captureUI(true);$('#analysis-progress').value=0;$('#capture-elapsed').textContent='00:00';
-  captureMessage('MEREKAM AUDIO TAB. Putar video di tab YouTube. Tidak ada audio yang dipantulkan kembali ke speaker. Klik Selesai & Deteksi untuk mengubah jadi MIDI.');
+  captureMessage('MEREKAM AUDIO TAB. Putar video di tab YouTube. Tidak ada audio yang dipantulkan kembali ke speaker. Klik Selesai Rekam, lalu Analisis Audio → MIDI.');
   captureState.timer=setInterval(()=>{
    if(!captureState.stream)return;
    const sec=(performance.now()-captureState.start)/1000;
@@ -496,10 +499,98 @@ function finishTabCapture(){
  if(r&&r.state!=='inactive'){try{r.requestData();r.stop();}catch(err){captureMessage('Tidak dapat menyelesaikan rekaman: '+err.message);captureState.stream?.getTracks().forEach(t=>t.stop());captureState.stream=null;captureUI(false)}}
  else{captureState.stream.getTracks().forEach(t=>t.stop());captureState.stream=null;captureUI(false)}
 }
+// AI Piano (Magenta.js Onsets & Frames) on-demand.
+// Model ini sengaja tidak dimuat saat startup, supaya piano dan menu teori langsung ringan.
+let aiPianoModel=null, aiPianoLoading=null;
+function loadScriptOnce(url, check){
+ if(check?.())return Promise.resolve();
+ return new Promise((resolve,reject)=>{
+  const s=document.createElement('script');s.src=url;s.async=true;s.crossOrigin='anonymous';
+  const t=setTimeout(()=>{s.remove();reject(new Error('Pengunduhan pustaka terlalu lama. Periksa internet lalu coba lagi.'))},45000);
+  s.onload=()=>{clearTimeout(t);if(check&&!check())reject(new Error('Pustaka gagal dibaca.'));else resolve()};
+  s.onerror=()=>{clearTimeout(t);reject(new Error('Pustaka audio tidak dapat diunduh. Periksa koneksi internet atau pemblokir skrip.'))};
+  document.head.appendChild(s);
+ });
+}
+async function getAiPianoModel(status){
+ if(aiPianoModel)return aiPianoModel;
+ if(!aiPianoLoading){
+  aiPianoLoading=(async()=>{
+   status('Memuat TensorFlow.js untuk transkripsi piano…');
+   await loadScriptOnce('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.7.4/dist/tf.min.js',()=>!!window.tf);
+   status('Memuat mesin transkripsi Magenta…');
+   await loadScriptOnce('https://cdn.jsdelivr.net/npm/@magenta/music@1.23.1/es6/core.js',()=>!!window.core);
+   await loadScriptOnce('https://cdn.jsdelivr.net/npm/@magenta/music@1.23.1/es6/transcription.js',()=>!!window.transcription?.OnsetsAndFrames);
+   status('Mengunduh model piano (±30 MB, hanya saat pertama dipakai)…');
+   const model=new window.transcription.OnsetsAndFrames('https://storage.googleapis.com/magentadata/js/checkpoints/transcription/onsets_frames_uni_q2');
+   await model.initialize();
+   aiPianoModel=model;
+   return model;
+  })().catch(err=>{aiPianoLoading=null;throw err});
+ }
+ return aiPianoLoading;
+}
+async function runAiPianoAnalysis(msg,prog){
+ if(!rollState.sourceBuffer&&!rollState.sourcePCM)throw new Error('Belum ada audio. Rekam tab atau unggah file dahulu.');
+ const status=s=>{msg.textContent=s};
+ const model=await getAiPianoModel(status);
+ const ctx=audioContext();if(!ctx)throw new Error('Web Audio tidak tersedia.');
+ const limit=Number($('#ai-limit').value)||60;
+ let decoded;
+ if(rollState.sourcePCM){
+  const rate=rollState.sourceRate||11025;
+  const length=Math.min(rollState.sourcePCM.length,Math.floor(limit*rate));
+  decoded=ctx.createBuffer(1,length,rate);
+  decoded.copyToChannel(rollState.sourcePCM.slice(0,length),0);
+ }else{
+  status('Membaca rekaman audio…');
+  decoded=await ctx.decodeAudioData(rollState.sourceBuffer.slice(0));
+ }
+ const duration=Math.min(limit,decoded.duration,CAPTURE_LIMIT_SEC);
+ if(duration<1)throw new Error('Audio terlalu pendek, rekam sedikitnya 1 detik.');
+ const rate=decoded.sampleRate;
+ const length=Math.max(1,Math.floor(duration*rate));
+ let buffer=decoded;
+ if(length<decoded.length){
+  buffer=ctx.createBuffer(decoded.numberOfChannels,length,rate);
+  for(let c=0;c<decoded.numberOfChannels;c++)buffer.copyToChannel(decoded.getChannelData(c).subarray(0,length),c);
+ }
+ status('Model piano sedang membaca '+Math.round(duration)+' detik rekaman. Jangan tutup halaman…');
+ prog.value=15;
+ // Magenta mengembalikan NoteSequence dengan pitch, startTime, endTime.
+ // Pemrosesan lebih berat daripada FFT; playback dan navigasi tetap tidak diubah.
+ await new Promise(resolve=>requestAnimationFrame(()=>resolve()));
+ const seq=await model.transcribeFromAudioBuffer(buffer,1);
+ const events=(seq.notes||[]).map(n=>({midi:n.pitch,start:n.startTime,duration:n.endTime-n.startTime,source:'analyzed'}))
+  .filter(n=>Number.isInteger(n.midi)&&n.midi>=ROLL_LOW&&n.midi<=ROLL_HIGH&&Number.isFinite(n.start)&&n.start>=0&&Number.isFinite(n.duration)&&n.duration>=.06)
+  .sort((a,b)=>a.start-b.start||a.midi-b.midi).slice(0,8000);
+ if(!events.length){status('AI Piano tidak mendeteksi nada yang cukup jelas. Coba piano solo atau impor MIDI.');prog.value=100;return;}
+ stopRoll();rollState.notes=events;rollState.seconds=Math.max(16,duration+1);rollState.playhead=-2.8;
+ renderRoll();prog.value=100;
+ status('AI Piano: '+events.length+' nada · '+Math.round(duration)+' detik. Dengarkan hasilnya, edit jika perlu, lalu ekspor MIDI.');
+ document.querySelector('.roll-panel')?.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function updateAnalysisModeHelp(){
+ const mode=$('#analysis-mode')?.value;
+ const note=$('#ai-mode-notice');if(!note)return;
+ if(mode==='piano_ai'){
+  note.dataset.fft='false';note.innerHTML='<strong>AI Piano Solo</strong> — model Onsets & Frames untuk not piano dua tangan. Beban awal ±30 MB saat dipilih; paling cocok untuk rekaman piano saja, bukan band lengkap.';
+  $('#ai-limit').disabled=false;
+ }else{
+  note.dataset.fft='true';note.innerHTML='<strong>Deteksi Cepat (eksperimental)</strong> — FFT hanya memperkirakan frekuensi. Untuk lagu dengan bass, gitar, drum, dan banyak instrumen, hasilnya bisa salah parah. Jangan jadikan MIDI final.';
+  $('#ai-limit').disabled=true;
+ }
+}
 async function analyzeUploadedAudio(){
  const btn=$('#analyze-audio'),msg=$('#analysis-message'),prog=$('#analysis-progress');
  if(!rollState.sourceBuffer&&!rollState.sourcePCM)return toast('Pilih audio atau tangkap suara tab YouTube dahulu.');
- btn.disabled=true;btn.textContent='Menganalisis...';prog.value=0;msg.textContent='Membaca gelombang audio...';
+ if($('#analysis-mode').value==='piano_ai'){
+  btn.disabled=true;btn.textContent='Memproses dengan AI Piano…';prog.value=0;
+  try{await runAiPianoAnalysis(msg,prog)}catch(err){msg.textContent='AI Piano gagal: '+(err.message||err)+'. Gunakan audio piano solo atau impor MIDI.';toast('AI Piano belum berhasil. Periksa koneksi dan audio.');}
+  finally{btn.disabled=false;btn.textContent='♫ Analisis Audio → MIDI'}
+  return;
+ }
+ btn.disabled=true;btn.textContent='Menganalisis dengan FFT...';prog.value=0;msg.textContent='Membaca gelombang audio...';
  try{
   let raw,max;
   if(rollState.sourcePCM){max=Math.min(rollState.sourcePCM.length/rollState.sourceRate,CAPTURE_LIMIT_SEC);raw=rollState.sourcePCM.slice(0,Math.floor(max*rollState.sourceRate));}
@@ -519,10 +610,14 @@ async function analyzeUploadedAudio(){
   msg.textContent=`Selesai: ${notes.length} nada terdeteksi. Klik ↓ MIDI untuk mengunduh. Periksa dan koreksi hasilnya sebelum latihan.`;document.querySelector('.roll-panel')?.scrollIntoView({behavior:'smooth',block:'start'});
   if(!notes.length)toast('Tidak terdeteksi nada. Periksa rekamannya di pemutar audio, lalu pilih mode Melodi utama.');
  }catch(err){if(rollState.worker){rollState.worker.terminate();rollState.worker=null;}msg.textContent='Analisis gagal: '+(err.message||err);toast('Deteksi audio gagal. Coba file WAV/MP3 atau pilih mode Melodi utama.');}
- finally{btn.disabled=false;btn.textContent='♫ Deteksi Audio → MIDI';}
+ finally{btn.disabled=false;btn.textContent='♫ Analisis Audio → MIDI';}
 }
 function initTranscription(){
- renderRoll();$('#open-source').addEventListener('click',openReference);$('#capture-start').addEventListener('click',startTabCapture);$('#capture-stop').addEventListener('click',finishTabCapture);
+ try{const v=Number(localStorage.getItem('chord-atlas-midi-volume'));if(v>=50&&v<=250)midiVolumePercent=v;}catch(_){/* local storage may be disabled */}
+ const volumeInput=$('#roll-volume'),volumeLabel=$('#roll-volume-value');
+ volumeInput.value=String(midiVolumePercent);volumeLabel.textContent=midiVolumePercent+'%';
+ volumeInput.addEventListener('input',e=>{midiVolumePercent=Math.max(50,Math.min(250,Number(e.target.value)||200));volumeLabel.textContent=midiVolumePercent+'%';try{localStorage.setItem('chord-atlas-midi-volume',String(midiVolumePercent));}catch(_){/* private mode */}});
+ renderRoll();updateAnalysisModeHelp();$('#analysis-mode').addEventListener('change',updateAnalysisModeHelp);$('#open-source').addEventListener('click',openReference);$('#capture-start').addEventListener('click',startTabCapture);$('#capture-stop').addEventListener('click',finishTabCapture);
  $('#source-speed').addEventListener('change',e=>$('#audio-reference').playbackRate=Number(e.target.value));
  $('#source-audio').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;if(rollState.objectURL)URL.revokeObjectURL(rollState.objectURL);rollState.objectURL=URL.createObjectURL(file);rollState.sourceBuffer=await file.arrayBuffer();rollState.sourcePCM=null;rollState.filename=file.name;
   $('#audio-reference').src=rollState.objectURL;$('#analyze-audio').disabled=false;$('#analysis-message').textContent=file.name+' · siap dianalisis';$('#analysis-progress').value=0;});
